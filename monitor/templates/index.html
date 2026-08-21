@@ -1,0 +1,3665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>千川素材监控看板 · 示例账户-直播</title>
+<script src="./echarts.min.js"></script>
+<style>
+/* ============================================================
+   Design Tokens · 东方墨绿 × 琥珀 · 应用式数据看板
+   ============================================================ */
+:root {
+  --brand:        #1e5b4c;
+  --brand-strong: #123d33;
+  --brand-soft:   #e7f0ea;
+  --brand-mist:   #f2f7f4;
+  --accent:       #c9a13a;
+  --accent-soft:  #f8f1df;
+  --teal:         #4f9d86;
+  --blue:         #4c7faf;
+
+  --bg:      #f4f5f1;
+  --card:    #ffffff;
+  --line:    #e6e9e2;
+  --line-2:  #eef1ec;
+  --ink:     #18241f;
+  --ink-2:   #56665d;
+  --ink-3:   #8d9a92;
+
+  --pos: #2e8b57; --pos-bg: #e6f4ec;
+  --neg: #c0523f; --neg-bg: #fbeae7;
+
+  --t-new-bg: #e7f0ea;  --t-new-fg: #1e5b4c;
+  --t-up-bg:  #e3eff6;  --t-up-fg:  #2f6b8f;
+  --t-down-bg:#f8efdd;  --t-down-fg:#9a7a25;
+  --t-stop-bg:#eef0ec;  --t-stop-fg:#75817a;
+  --t-flag-bg:#fbe9e4;  --t-flag-fg:#b64a38;
+
+  --shadow-sm: 0 1px 2px rgba(20,45,38,.05);
+  --shadow-md: 0 8px 28px -10px rgba(20,45,38,.16);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --sidebar-w: 224px;
+  --font: "Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink); font-size: 13px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   App Shell · 侧边栏 + 主区
+   ============================================================ */
+.app { display: flex; min-height: 100vh; }
+
+/* ---------- 侧边栏 ---------- */
+.sidebar {
+  width: var(--sidebar-w); flex: none;
+  background: linear-gradient(180deg, var(--brand-strong) 0%, var(--brand) 120%);
+  color: rgba(255,255,255,.88);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; z-index: 40;
+}
+.side-brand {
+  display: flex; align-items: center; gap: 11px;
+  padding: 18px 18px 16px; border-bottom: 1px solid rgba(255,255,255,.10);
+}
+.brand-mark {
+  width: 38px; height: 38px; border-radius: 11px; flex: none;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.20);
+  display: grid; place-items: center; font-size: 18px; font-weight: 700; color: #fff;
+}
+.side-brand b { display: block; font-size: 14px; color: #fff; letter-spacing: .5px; }
+.side-brand span { display: block; font-size: 11px; opacity: .72; margin-top: 1px; }
+
+.side-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+.side-label {
+  font-size: 10.5px; letter-spacing: 1.5px; color: rgba(255,255,255,.42);
+  padding: 10px 12px 6px; text-transform: uppercase;
+}
+.side-nav button {
+  width: 100%; display: flex; align-items: center; gap: 11px;
+  background: none; border: none; cursor: pointer;
+  padding: 10px 12px; margin-bottom: 2px;
+  color: rgba(255,255,255,.78); font-family: var(--font); font-size: 13px;
+  border-radius: 9px; position: relative;
+  transition: background .16s ease, color .16s ease;
+}
+.side-nav button svg { width: 17px; height: 17px; flex: none; opacity: .9; }
+.side-nav button:hover { background: rgba(255,255,255,.07); color: #fff; }
+.side-nav button.active {
+  background: rgba(255,255,255,.13); color: #fff; font-weight: 600;
+}
+.side-nav button.active::before {
+  content: ""; position: absolute; left: -10px; top: 20%; bottom: 20%; width: 3px;
+  background: var(--accent); border-radius: 0 3px 3px 0;
+}
+
+
+/* ---------- 主区 ---------- */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  background: var(--card); border-bottom: 1px solid var(--line);
+  padding: 0 26px; height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  position: sticky; top: 0; z-index: 30; box-shadow: var(--shadow-sm);
+}
+.crumb { display: flex; align-items: center; gap: 10px; }
+.crumb .crumb-root { color: var(--ink-3); font-size: 12px; }
+.crumb .crumb-sep { color: var(--line); }
+.crumb h2 { font-size: 15.5px; font-weight: 700; color: var(--ink); }
+.crumb .crumb-sub { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+.topbar-right {
+  font-size: 11.5px; color: var(--ink-2);
+  background: var(--brand-mist); border: 1px solid var(--line);
+  padding: 6px 14px; border-radius: 999px; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.topbar-right b { color: var(--brand); font-weight: 700; }
+.topbar-acc { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.topbar-sep { width: 1px; height: 18px; background: var(--line); margin: 0 2px; }
+.topbar-acc .pr-chip { padding: 6px 12px; font-size: 12px; }
+.topbar-acc .pr-text { font-size: 12px; }
+.account-sel {
+  padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--brand);
+  background: var(--card); cursor: pointer; max-width: 240px;
+}
+.account-sel:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(30,91,76,.10); }
+
+.content { padding: 22px 26px 40px; max-width: 1440px; width: 100%; margin: 0 auto; }
+.page { display: none; animation: fadeUp .28s ease; }
+.page.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ============================================================
+   通用组件
+   ============================================================ */
+.notice {
+  background: var(--accent-soft); border: 1px solid #e6d9b4; color: #7a5e17;
+  padding: 9px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 12px;
+}
+.panel {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; box-shadow: var(--shadow-sm); margin-bottom: 18px;
+}
+.panel h3 {
+  font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.panel h3::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--brand); flex: none; }
+.panel-hint { margin-left: auto; font-size: 11px; color: var(--ink-3); font-weight: 400; }
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.chart { height: 272px; }
+.chart.full { grid-column: 1 / -1; height: 300px; }
+.empty { text-align: center; color: var(--ink-3); padding: 26px 12px; font-size: 12.5px; }
+.muted { color: var(--ink-3); }
+
+/* 筛选工具条 */
+.filters { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.filters input, .filters select {
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 12.5px; color: var(--ink); background: var(--card);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.filters input { width: 250px; }
+.filters input:focus, .filters select:focus {
+  outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(30,91,76,.10);
+}
+.filters label { color: var(--ink-2); font-size: 12px; }
+.count-chip {
+  margin-left: auto; font-size: 12px; color: var(--ink-2);
+  background: var(--brand-mist); border: 1px solid var(--line);
+  padding: 4px 12px; border-radius: 999px; font-variant-numeric: tabular-nums;
+}
+
+/* 标签 */
+.tag {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; letter-spacing: .2px; white-space: nowrap;
+}
+.tag.new  { background: var(--t-new-bg);  color: var(--t-new-fg); }
+.tag.up   { background: var(--t-up-bg);   color: var(--t-up-fg); }
+.tag.down { background: var(--t-down-bg); color: var(--t-down-fg); }
+.tag.stop { background: var(--t-stop-bg); color: var(--t-stop-fg); }
+.tag.flag { background: var(--t-flag-bg); color: var(--t-flag-fg); }
+.tag.agg  { background: var(--accent-soft); color: #8a6a1f; }
+.tag.ai   { background: #ece7fb; color: #6a4fb0; }
+.tag.ev   { background: #e3f0fa; color: #2e6b9e; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.badge.pos { color: var(--pos); background: var(--pos-bg); }
+.badge.neg { color: var(--neg); background: var(--neg-bg); }
+
+/* 分页 */
+.pager {
+  display: flex; gap: 12px; align-items: center; margin-top: 12px;
+  font-size: 12px; color: var(--ink-2); justify-content: flex-end;
+}
+.pager button {
+  padding: 6px 16px; border: 1px solid var(--line); background: var(--card);
+  border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font); font-size: 12px; color: var(--ink);
+  transition: all .15s ease;
+}
+.pager button:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); background: var(--brand-mist); }
+.pager button:disabled { opacity: .4; cursor: default; }
+
+/* 字段设置 */
+.colwrap { position: relative; display: inline-block; }
+.colbtn {
+  padding: 8px 14px; border: 1px solid var(--line); background: var(--card);
+  border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font); font-size: 12.5px;
+  color: var(--ink-2); transition: all .15s ease;
+}
+.colbtn:hover { background: var(--brand-mist); color: var(--brand); border-color: var(--brand); }
+.colpanel {
+  position: absolute; z-index: 300; left: 0; right: auto; top: calc(100% + 6px);
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md); padding: 10px; min-width: 340px;
+  max-width: calc(100vw - 32px); max-height: min(420px, calc(100vh - 150px)); overflow-y: auto; display: none;
+}
+.colrow { display: flex; align-items: center; gap: 5px; padding: 3px 2px; font-size: 12px; color: var(--ink); }
+.colrow input[type=checkbox] { margin: 0; flex: 0 0 13px; accent-color: var(--brand); width: 13px; height: 13px; min-width: 13px; max-width: 13px; }
+.colrow button {
+  width: 19px; height: 17px; border: 1px solid var(--line); background: var(--brand-mist);
+  border-radius: 4px; cursor: pointer; font-size: 9.5px; line-height: 1; flex: none; color: var(--ink-2);
+  padding: 0;
+}
+.colrow button:hover { background: var(--brand-soft); color: var(--brand); }
+.colrow span { margin-left: 2px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.colreset {
+  margin-top: 8px; width: 100%; padding: 6px; border: 1px solid var(--line);
+  background: var(--brand-mist); border-radius: 6px; cursor: pointer; font-family: var(--font); font-size: 12px; color: var(--brand);
+}
+.colreset:hover { background: var(--brand-soft); }
+
+/* 消耗区间分析：独立日期选择 + 4 区间卡 + 列表 */
+.part-rangebar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; position: relative; }
+.pr-label { font-size: 12px; color: var(--ink-2); }
+.pr-text { font-size: 12.5px; font-weight: 600; color: var(--brand); background: var(--brand-mist); border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.pr-chip {
+  padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card);
+  color: var(--ink-2); font-family: var(--font); font-size: 12.5px; cursor: pointer; transition: all .15s ease;
+}
+.pr-chip:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-mist); }
+.pr-pop {
+  position: fixed; z-index: 400;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-md); padding: 12px; min-width: 286px;
+  max-width: calc(100vw - 16px);
+}
+.pr-overlay { position: fixed; inset: 0; z-index: 350; background: transparent; display: none; }
+.pr-overlay.open { display: block; }
+.pr-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.pr-nav { border: none; background: transparent; font-size: 17px; cursor: pointer; color: var(--ink-2); padding: 2px 9px; border-radius: 6px; line-height: 1; }
+.pr-nav:hover { background: var(--brand-mist); color: var(--brand); }
+.pr-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.pr-grid-head span { text-align: center; font-size: 11px; color: var(--ink-3); padding: 4px 0; }
+.pr-cell { text-align: center; padding: 6px 0; font-size: 12px; color: var(--ink); border-radius: 6px; cursor: pointer; }
+.pr-cell:hover { background: var(--brand-mist); color: var(--brand); }
+.pr-cell.out { color: #b3bbb5; background: #fff; font-weight: 400; }
+.pr-cell.sel { background: var(--brand); color: #fff; font-weight: 600; }
+.pr-cell.pick { background: var(--accent-soft); color: #7a5e17; font-weight: 600; }
+.pr-cell.hover { background: #c7ddd1; color: #123d33; font-weight: 600; }
+.pr-cell.disabled { background: #e9ebe8; color: #b9c0ba; cursor: default; }
+.pr-cell.disabled:hover { background: #e9ebe8; color: #b9c0ba; cursor: default; }
+.pr-month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; min-width: 220px; }
+.pr-mcell { text-align: center; padding: 13px 0; font-size: 12.5px; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: all .15s ease; }
+.pr-mcell:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-mist); }
+.pr-mcell.disabled { color: #c6ccc7; border-color: var(--line); cursor: default; }
+.pr-mcell.disabled:hover { background: transparent; border-color: var(--line); color: #c6ccc7; }
+.pr-mcell.sel { background: var(--brand); color: #fff; border-color: var(--brand); font-weight: 600; }
+.part-buckets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 18px; }
+.part-bucket {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; cursor: pointer; box-shadow: var(--shadow-sm); transition: all .15s ease;
+}
+.part-bucket:hover { border-color: var(--brand); box-shadow: var(--shadow-md); }
+.part-bucket.act { border-color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
+.pb-head { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+.pb-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.pb-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.pb-range { font-size: 12px; color: var(--ink-3); margin-bottom: 12px; line-height: 1.4; }
+.pb-metrics { display: flex; flex-direction: column; gap: 6px; }
+.pb-m { font-size: 12px; color: var(--ink); line-height: 1.3; }
+.pb-m-label { color: var(--ink); font-weight: 400; }
+.pb-m-num { font-size: 17px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pb-m-unit { color: var(--ink); font-weight: 400; }
+@media (max-width: 900px) { .part-buckets { grid-template-columns: repeat(2, 1fr); } }
+
+/* 作者二级侧拉菜单 */
+.auth-menu { position: relative; }
+.auth-btn {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--card); font-family: var(--font); font-size: 12.5px; color: var(--ink);
+  text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.auth-btn:hover, .auth-btn.open { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(30,91,76,.10); }
+.auth-panel {
+  position: absolute; z-index: 300; left: 0; top: calc(100% + 6px);
+  display: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md); overflow: hidden; width: 320px; max-width: calc(100vw - 32px);
+}
+.auth-panel.open { display: flex; }
+.auth-groups { width: 110px; flex: none; border-right: 1px solid var(--line-2); background: var(--brand-mist); padding: 6px 0; }
+.auth-group {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 10px 12px;
+  font-size: 12.5px; color: var(--ink-2); cursor: pointer; transition: all .12s ease;
+}
+.auth-group:hover, .auth-group.active { background: var(--card); color: var(--brand); font-weight: 600; }
+.auth-group .ag-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auth-group .ag-arrow { color: var(--ink-3); font-size: 14px; line-height: 1; }
+.auth-group.active .ag-arrow { color: var(--brand); }
+.auth-items { flex: 1; min-width: 0; max-height: 300px; overflow-y: auto; padding: 6px 8px; }
+.auth-item {
+  display: flex; align-items: center; gap: 6px; padding: 5px 6px; font-size: 12.5px; color: var(--ink);
+  cursor: pointer; border-radius: 4px;
+}
+.auth-item:hover { background: var(--brand-mist); }
+.auth-item input[type=checkbox] { margin: 0; flex: 0 0 13px; accent-color: var(--brand); width: 13px; height: 13px; min-width: 13px; max-width: 13px; }
+.auth-item .a-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auth-clear {
+  display: block; width: 100%; border: none; border-top: 1px solid var(--line-2); background: none;
+  padding: 7px; font-family: var(--font); font-size: 11.5px; color: var(--ink-3); cursor: pointer; text-align: center;
+}
+.auth-clear:hover { color: var(--neg); background: var(--neg-bg); }
+
+/* 作者维度投放表（总览） */
+.charts .panel.full { grid-column: 1 / -1; }
+.auth-table th { position: sticky; top: 0; z-index: 1; font-size: 11.5px; }
+.auth-table td { font-size: 12px; }
+.auth-table .l { text-align: left; }
+.auth-table th.psort { cursor: pointer; user-select: none; }
+.auth-table .sort-ic { font-size: 10px; color: var(--ink-3); margin-left: 3px; }
+.auth-table th.psort:hover .sort-ic { color: var(--brand); }
+.auth-table tbody tr { cursor: pointer; }
+.auth-table tbody tr:hover { background: #f6faf7; }
+.auth-table tbody tr.act { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
+.auth-table tbody tr.act td { font-weight: 600; }
+.auth-top-head { display: flex; align-items: center; gap: 8px; }
+.auth-top-head .auth-top-tools { margin-left: auto; flex: none; }
+.inline-sel {
+  padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
+  font-family: var(--font); font-size: 12px; color: var(--ink); background: var(--card); cursor: pointer;
+}
+.auth-top-body { max-height: 460px; overflow: auto; }
+.auth-top-body table { width: 100%; border-collapse: collapse; }
+.auth-top-body tbody tr { cursor: pointer; }
+.auth-top-body tbody tr:hover td { background: #f6faf7; }
+
+/* 表格（新增素材 / 修订 / ROI 区间列表） */
+.scroll { max-height: 560px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+table { width: 100%; border-collapse: collapse; background: var(--card); }
+th, td { padding: 9px 12px; border-bottom: 1px solid var(--line-2); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+th {
+  background: var(--brand-mist); color: var(--brand-strong);
+  font-weight: 600; font-size: 11.5px; letter-spacing: .4px; position: sticky; top: 0; z-index: 1;
+}
+td { font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+tbody tr { transition: background .14s ease; }
+tbody tr:hover { background: #f6faf7; }
+td.l { text-align: left; max-width: 420px; overflow: hidden; text-overflow: ellipsis; }
+th.l { text-align: left; }
+.mat-name { max-width: 420px; overflow: hidden; text-overflow: ellipsis; }
+.mat-name-link {
+  display: inline-block; max-width: 460px; text-align: left; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
+  color: var(--brand-strong); background: none; border: none; padding: 0;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none;
+  font-family: inherit;
+}
+.mat-name-link:hover { color: var(--brand); text-decoration: underline; }
+
+/* ============================================================
+   KPI 卡（总览）
+   ============================================================ */
+.kpi-row { display: grid; gap: 14px; margin-bottom: 18px; }
+.kpi-row--main { grid-template-columns: repeat(4, 1fr); }
+.kpi-row--sub { grid-template-columns: repeat(4, 1fr); }
+.kpi {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px 14px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--brand); border-radius: 0 3px 3px 0; }
+.kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.kpi .kpi-label { display: flex; align-items: center; gap: 7px; color: var(--ink-2); font-size: 12px; font-weight: 500; letter-spacing: .3px; }
+.kpi .kpi-ic {
+  width: 22px; height: 22px; border-radius: 6px; flex: none;
+  background: var(--brand-soft); color: var(--brand); display: grid; place-items: center;
+  font-size: 11.5px; font-weight: 700;
+}
+.kpi .kpi-value { margin-top: 9px; font-size: 27px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -.5px; line-height: 1.1; }
+.kpi .kpi-value .unit { font-size: 12.5px; color: var(--ink-3); font-weight: 500; margin-left: 3px; letter-spacing: 0; }
+.kpi .kpi-meta { margin-top: 7px; font-size: 11.5px; color: var(--ink-3); }
+.kpi-row--sub .kpi { padding: 13px 16px 12px; }
+.kpi-row--sub .kpi::before { background: var(--accent); }
+.kpi-row--sub .kpi .kpi-value { font-size: 20px; margin-top: 6px; }
+.kpi-row--sub .kpi .kpi-label { font-size: 11.5px; }
+
+/* ============================================================
+   素材库 · 主从布局
+   ============================================================ */
+.master-detail { display: flex; gap: 18px; align-items: flex-start; }
+
+.master {
+  width: 560px; flex: none;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px; box-shadow: var(--shadow-sm);
+}
+.master .filters {
+  margin-bottom: 10px; display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; align-items: center;
+}
+.master .filters input { width: 100%; grid-column: 1 / 3; min-width: 0; }
+.master .filters select { width: 100%; min-width: 0; }
+.master .filters .colwrap { width: 100%; }
+.master .filters .colbtn { width: 100%; }
+.master .filters .count-chip { margin: 0; width: 100%; text-align: center; }
+.list-scroll { max-height: calc(100vh - 260px); min-height: 320px; overflow-y: auto; border: 1px solid var(--line-2); border-radius: var(--radius-sm); }
+
+.mat-item {
+  display: block; width: 100%; text-align: left; cursor: pointer; border: none; background: none;
+  border-bottom: 1px solid var(--line-2); padding: 11px 12px;
+  font-family: var(--font); transition: background .14s ease;
+}
+.mat-item:last-child { border-bottom: none; }
+.mat-item:hover { background: #f6faf7; }
+.mat-item.sel { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
+.mat-item.sel:hover { background: var(--brand-soft); }
+
+.mat-top { display: flex; align-items: flex-start; gap: 8px; }
+.mat-item-name { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.35; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mat-badges { display: flex; gap: 4px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+.mat-meta { font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+.mat-fields { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+.mat-field .f-label { display: block; font-size: 10px; color: var(--ink-3); letter-spacing: .3px; }
+.mat-field .f-val { font-size: 12.5px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mat-spark { display: inline-flex; align-items: flex-end; margin-left: auto; }
+
+/* 详情面板 */
+.detail-pane {
+  flex: 1; min-width: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); min-height: 420px; position: sticky; top: 72px;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.detail-empty { margin: auto; text-align: center; color: var(--ink-3); padding: 60px 20px; font-size: 13px; }
+.detail-empty .de-ic { font-size: 30px; display: block; margin-bottom: 10px; opacity: .5; }
+.detail-head {
+  padding: 16px 18px 12px; border-bottom: 1px solid var(--line-2);
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.detail-head .grow { flex: 1; min-width: 0; }
+.detail-name { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.4; word-break: break-all; }
+.detail-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.detail-meta .dm { font-size: 11px; color: var(--ink-3); }
+.icon-btn {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
+  width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 16px; line-height: 1;
+  display: grid; place-items: center; flex: none; transition: all .15s ease;
+}
+.icon-btn:hover { background: var(--neg-bg); color: var(--neg); border-color: var(--neg); }
+.detail-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--line-2); }
+.dk { background: var(--brand-mist); border-radius: var(--radius-sm); padding: 9px 12px; }
+.dk .dk-label { font-size: 10.5px; color: var(--ink-3); letter-spacing: .3px; }
+.dk .dk-val { font-size: 17px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 3px; }
+.dk .dk-val small { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+.detail-body { padding: 14px 18px 18px; flex: 1; }
+.detail-chart { height: 250px; margin-top: 6px; }
+.trend-legend { display: inline-flex; align-items: center; gap: 12px; margin-right: 12px; }
+.tl-item { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-2); cursor: pointer; user-select: none; }
+.tl-dot { width: 10px; height: 10px; border-radius: 3px; }
+.tl-item.off { opacity: .35; text-decoration: line-through; }
+.detail-info { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 4px; font-size: 12px; }
+.detail-info .di { color: var(--ink-2); }
+.detail-info .di b { color: var(--ink); font-weight: 600; }
+
+/* ============================================================
+   ROI 分布
+   ============================================================ */
+.roi-buckets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.roi-bucket {
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--card); overflow: hidden; transition: box-shadow .15s ease, transform .15s ease;
+}
+.roi-bucket:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.roi-bucket-head { padding: 12px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.roi-bucket-head:hover { background: var(--brand-mist); }
+.roi-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.roi-bucket-head .rb-t { font-weight: 700; font-size: 12.5px; color: var(--ink); }
+.roi-bucket-head .rb-t .muted { font-weight: 400; }
+.roi-bucket-head .rb-n { margin-left: auto; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.roi-bucket-head .rb-n small { font-size: 10.5px; color: var(--ink-3); font-weight: 500; }
+.roi-bucket-head .rb-arrow { font-size: 12px; color: var(--ink-3); margin-left: 2px; }
+.roi-preview { border-top: 1px solid var(--line-2); padding: 5px 0; }
+.roi-preview .rp-head { display: flex; gap: 8px; padding: 4px 14px 2px; font-size: 10.5px; color: var(--ink-3); letter-spacing: .4px; }
+.roi-preview .rp-head .n { flex: 1; min-width: 0; }
+.roi-preview .rp-row { display: flex; gap: 8px; padding: 5px 14px; font-size: 11.5px; align-items: center; cursor: pointer; }
+.roi-preview .rp-row:hover { background: #f6faf7; }
+.roi-preview .rp-row .n { flex: 1; min-width: 0; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5; }
+.roi-preview .rp-head .v, .roi-preview .rp-row .v { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.roi-preview .rp-head .v:nth-child(2), .roi-preview .rp-row .v:nth-child(2) { width: 42px; }
+.roi-preview .rp-head .v:nth-child(3), .roi-preview .rp-row .v:nth-child(3) { width: 68px; font-size: 10.5px; }
+.roi-preview .rp-row .v { font-weight: 700; color: var(--ink); }
+.roi-bucket-foot { padding: 8px 14px; border-top: 1px solid var(--line-2); text-align: center; font-size: 12px; color: var(--brand); font-weight: 600; cursor: pointer; }
+.roi-bucket-foot:hover { background: var(--brand-mist); }
+
+/* ROI 钻取抽屉 */
+.roi-overlay { position: fixed; inset: 0; background: rgba(18,28,23,.36); z-index: 80; opacity: 0; pointer-events: none; transition: opacity .18s ease; }
+.roi-overlay.open { opacity: 1; pointer-events: auto; }
+.roi-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(720px, 100vw); background: var(--bg); border-left: 1px solid var(--line); box-shadow: var(--shadow-md); z-index: 81; transform: translateX(105%); transition: transform .22s ease; display: flex; flex-direction: column; }
+.roi-drawer.open { transform: translateX(0); }
+.roi-drawer-head { padding: 14px 18px; border-bottom: 1px solid var(--line-2); display: flex; align-items: flex-start; gap: 10px; }
+.roi-drawer-head .grow { flex: 1; min-width: 0; }
+.roi-drawer-title { font-size: 15px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.roi-drawer-sub { margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.roi-drawer-tools { padding: 10px 18px; border-bottom: 1px solid var(--line-2); display: flex; gap: 10px; align-items: center; }
+.roi-drawer-tools .search-inp { flex: 1; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; background: var(--card); color: var(--ink); outline: none; min-width: 0; }
+.roi-drawer-tools .search-inp:focus { border-color: var(--brand); }
+.roi-drawer-tools .rd-sort, .roi-drawer-tools .rd-dir {
+  padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px;
+  font-family: var(--font); font-size: 12px; color: var(--ink); background: var(--card); cursor: pointer; outline: none; flex: none;
+}
+.roi-drawer-tools .rd-sort:focus { border-color: var(--brand); }
+.roi-drawer-tools .rd-dir { color: var(--ink-2); min-width: 34px; text-align: center; }
+.roi-drawer-tools .rd-dir:hover { border-color: var(--brand); color: var(--brand); }
+.roi-drawer-tools .count { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.roi-drawer-body { flex: 1; overflow: auto; padding: 6px 18px 10px; }
+.roi-drawer-body table { width: 100%; border-collapse: collapse; }
+.roi-drawer-body th, .roi-drawer-body td { padding: 9px 10px; border-bottom: 1px solid var(--line-2); text-align: right; white-space: nowrap; font-size: 12.5px; }
+.roi-drawer-body td.l, .roi-drawer-body th.l { text-align: left; }
+.roi-drawer-body td.l { white-space: normal; }
+.roi-drawer-body th { background: var(--brand-mist); color: var(--brand-strong); font-weight: 600; font-size: 11.5px; letter-spacing: .4px; position: sticky; top: 0; z-index: 1; }
+.roi-drawer-body tbody tr { cursor: pointer; }
+.roi-drawer-body tbody tr:hover { background: #f6faf7; }
+.roi-drawer-body td .m-name { max-width: 330px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roi-drawer-body tbody tr:hover td .m-name { white-space: normal; word-break: break-all; line-height: 1.45; max-width: 330px; }
+/* AI素材排行：素材名称列收窄（完整名称通过 title 悬停展示） */
+#aiRankTable td .ai-rank-name { max-width: 230px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 素材评估排行：素材名称列收窄 */
+#evRankTable td .ev-rank-name { max-width: 230px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 新增素材 / 消耗区间列表：素材名称列可拖动调宽 */
+#newTable th, #partListTable th { position: relative; }
+#partListTable td .m-name { max-width: 380px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-resizer { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; z-index: 6; }
+.col-resizer::after { content: ''; position: absolute; top: 18%; bottom: 18%; left: 50%; width: 3px; margin-left: -1.5px; background: var(--line); border-radius: 2px; }
+.col-resizer:hover::after, .col-resizer.dragging::after { background: var(--brand); width: 4px; margin-left: -2px; }
+.roi-drawer-foot { padding: 12px 18px; border-top: 1px solid var(--line-2); display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+/* 加载更多 */
+.loadmore { display: block; width: 100%; padding: 9px; border: 1px dashed var(--line); border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: var(--card); color: var(--ink-2); font-size: 12.5px; cursor: pointer; }
+.loadmore:hover { color: var(--brand); border-color: var(--brand); background: var(--brand-mist); }
+.scroll:has(+ .loadmore) { border-radius: var(--radius-sm) var(--radius-sm) 0 0; border-bottom: none; }
+
+/* ============================================================
+   时间圈选工具条（任意起止区间，无大小限制）
+   ============================================================ */
+.rangebar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 16px; margin-bottom: 18px; box-shadow: var(--shadow-sm);
+}
+/* 全局时间圈选已移至顶栏（topbar-acc），样式复用 pr-chip / pr-text */
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width: 1100px) {
+  .master { width: 440px; }
+  .master .filters { grid-template-columns: repeat(2, 1fr); }
+  .master .filters input { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .sidebar { width: 62px; }
+  .side-brand { padding: 16px 0; justify-content: center; }
+  .side-brand .brand-mark { width: 34px; height: 34px; font-size: 15px; }
+  .side-brand b, .side-brand span, .side-label, .side-nav button span { display: none; }
+  .side-nav button { justify-content: center; padding: 12px 0; }
+  .side-nav button svg { width: 19px; height: 19px; }
+  .side-nav button.active::before { left: -10px; }
+  .kpi-row--main, .kpi-row--sub { grid-template-columns: repeat(2, 1fr); }
+  .charts { grid-template-columns: 1fr; }
+  .chart.full { height: 280px; }
+  .detail-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .master-detail { flex-direction: column; }
+  .master { width: 100%; }
+  .master .filters { grid-template-columns: 1fr; }
+  .master .filters input { grid-column: auto; }
+  .roi-buckets { grid-template-columns: 1fr; }
+  .list-scroll { max-height: 46vh; }
+  .detail-pane { position: fixed; inset: 0; z-index: 70; border-radius: 0; min-height: 0; display: none; }
+  .detail-pane.open { display: flex; }
+  .detail-empty { display: none; }
+  .content { padding: 16px 14px 32px; }
+  .topbar { padding: 0 14px; }
+  .crumb-root, .crumb-sep { display: none; }
+  .topbar-right { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: #cdd6ce; border-radius: 6px; border: 2px solid var(--card); }
+::-webkit-scrollbar-thumb:hover { background: #b6c2b8; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ 侧边栏 ============ -->
+  <aside class="sidebar">
+    <div class="side-brand">
+      <div class="brand-mark" id="brandMark">西</div>
+      <div>
+        <b>千川素材监控</b>
+        <span id="sideBrandSub">示例账户 · 直播</span>
+      </div>
+    </div>
+    <nav class="side-nav">
+      <div class="side-label">数据视图</div>
+      <button class="active" data-tab="overview" data-title="总览看板" data-sub="全量投放表现一览">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>
+        <span>总览看板</span>
+      </button>
+      <button data-tab="materials" data-title="素材库" data-sub="按天入库 · 周聚合 · 点选查看趋势">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.5l9 4.5 9-4.5L12 3z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 17 12 21.5 21 17"/></svg>
+        <span>素材库</span>
+      </button>
+      <button data-tab="new" data-title="新增素材" data-sub="每周上新 · 双口径 · 次周留存">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+        <span>新增素材</span>
+      </button>
+      <button data-tab="roi" data-title="ROI 分布" data-sub="素材盈亏结构 · 区间钻取">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9M10 20V4M16 20v-7M21 20H3"/></svg>
+        <span>ROI 分布</span>
+      </button>
+      <button data-tab="ai" data-title="AI素材" data-sub="AI素材专项 · 每周新增 / 排行 / ROI分布">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4L12 3z"/><path d="M18.5 15l.9 2.3 2.1.7-2.1.7-.9 2.3-.9-2.3-2.1-.7 2.1-.7.9-2.3z"/><path d="M5.5 14l.7 1.8 1.7.5-1.7.5-.7 1.8-.7-1.8-1.7-.5 1.7-.5.7-1.8z"/></svg>
+        <span>AI素材</span>
+      </button>
+      <button data-tab="evaluation" data-title="素材评估" data-sub="素材状态专项 · 新增评估 / 状态排行 / ROI分布">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/><path d="M3 8h18M3 16h18"/></svg>
+        <span>素材评估</span>
+      </button>
+      <div class="side-label" style="margin-top:18px">系统</div>
+      <button data-tab="revision" data-title="修订记录" data-sub="官方回调覆盖痕迹">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
+        <span>修订记录</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- ============ 主区 ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">
+        <span class="crumb-root">千川素材监控</span>
+        <span class="crumb-sep">/</span>
+        <div>
+          <h2 id="pageTitle">总览看板</h2>
+          <div class="crumb-sub" id="pageSub">全量投放表现一览</div>
+        </div>
+      </div>
+      <div class="topbar-acc">
+        <select id="accountSel" class="account-sel" title="切换账户/数据源"></select>
+        <span class="topbar-sep"></span>
+        <!-- ======== 全局时间圈选（置于顶栏，与账户选择器同行） ======== -->
+        <span class="pr-text" id="gRangeText"></span>
+        <button class="pr-chip" id="gWeekBtn">自然周</button>
+        <button class="pr-chip" id="gMonthBtn">自然月</button>
+        <button class="pr-chip" id="gCustomBtn">自定义</button>
+        <button class="pr-chip" id="gResetBtn">重置</button>
+        <div class="topbar-right" id="geninfoTop"></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div id="echarts-warn" class="notice" style="display:none">⚠️ ECharts 未能从 CDN 加载（可能离线），图表不可用，数据表格与素材库仍可正常查看。</div>
+
+      <!-- ======== 总览看板 ======== -->
+      <section id="tab-overview" class="page active">
+        <div id="statCards"></div>
+        <div class="charts">
+          <div class="panel full"><h3>每周整体 ROI<span class="panel-hint">虚线为盈亏线 1.0</span></h3><div id="ch_roi" class="chart full"></div></div>
+        </div>
+        <div class="charts">
+          <div class="panel">
+            <h3>全职作者素材投放<span class="panel-hint">作者甲/作者乙 · 点击作者行查看素材</span></h3>
+            <div class="scroll" style="max-height:440px"><table class="auth-table" id="authFullTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+          <div class="panel">
+            <h3>其他作者素材投放<span class="panel-hint">点击作者行查看素材</span></h3>
+            <div class="scroll" style="max-height:440px"><table class="auth-table" id="authOtherTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">作者素材 TOP10
+              <span class="panel-hint" id="authTopHint"></span>
+              <span class="auth-top-tools">
+                <select id="authTopSort" class="inline-sel" title="切换排序指标">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="order">按订单数</option>
+                </select>
+              </span>
+            </h3>
+            <div id="authTopBody" class="auth-top-body"><div class="empty">点击上方作者素材表中的作者行，查看该作者 TOP10 素材（再点素材行可跳转素材库详情）</div></div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="panel full">
+            <h3>产品素材投放效果<span class="panel-hint">按区间消耗降序 · 点击产品行查看素材</span></h3>
+            <div class="scroll" style="max-height:440px"><table class="auth-table" id="prodTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">产品素材 TOP
+              <span class="panel-hint" id="prodTopHint"></span>
+              <span class="auth-top-tools">
+                <select id="prodTopSort" class="inline-sel" title="切换排序指标">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="order">按订单数</option>
+                </select>
+              </span>
+            </h3>
+            <div id="prodTopBody" class="auth-top-body"><div class="empty">点击上方产品素材投放效果表中的产品行，查看该产品 TOP10 素材（再点素材行可跳转素材库详情）</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======== 素材库（主从布局） ======== -->
+      <section id="tab-materials" class="page">
+        <div class="master-detail">
+          <div class="master">
+            <div class="filters">
+              <input id="search" placeholder="搜索素材名称 / ID…">
+              <select id="lineFilter"><option value="">全部产品</option></select>
+              <div class="auth-menu" id="authMenu">
+                <button type="button" class="auth-btn" id="authBtn" title="作者筛选（可多选）">作者：全部</button>
+                <div class="auth-panel" id="authPanel">
+                  <div class="auth-groups">
+                    <div class="auth-group active" data-type="fulltime"><span class="ag-name">全职作者</span><span class="ag-arrow">›</span></div>
+                    <div class="auth-group" data-type="other"><span class="ag-name">其他作者</span><span class="ag-arrow">›</span></div>
+                  </div>
+                  <div class="auth-items" id="authItems"></div>
+                </div>
+              </div>
+              <select id="channelFilter"><option value="">全部渠道</option></select>
+              <select id="phaseFilter"><option value="">全部阶段</option></select>
+              <select id="sortSel">
+                <option value="spend">按累计消耗</option>
+                <option value="roi">按整体ROI</option>
+                <option value="netroi">按净成交ROI</option>
+                <option value="lastspend">按本周消耗</option>
+              </select>
+              <div class="colwrap"><button id="matColBtn" class="colbtn">⚙ 字段</button><div id="matColPanel" class="colpanel"></div></div>
+              <span class="count-chip" id="matCount"></span>
+            </div>
+            <div class="list-scroll" id="matList"></div>
+            <div class="pager">
+              <button id="pgPrev">← 上一页</button>
+              <span id="pgInfo"></span>
+              <button id="pgNext">下一页 →</button>
+            </div>
+          </div>
+
+          <div class="detail-pane" id="detailPane">
+            <div class="detail-empty" id="detailEmpty">
+              <span class="de-ic">☰</span>
+              从左侧选择一个素材查看详情<br><span class="muted">点击任意素材行，右侧将展示其完整指标与周趋势</span>
+            </div>
+            <div id="detailBody" style="display:none">
+              <div class="detail-head">
+                <div class="grow">
+                  <div class="detail-name" id="detailName"></div>
+                  <div class="detail-meta" id="detailMeta"></div>
+                </div>
+                <button class="icon-btn" id="detailClose" title="关闭详情">✕</button>
+              </div>
+              <div class="detail-kpis" id="detailKpis"></div>
+              <div class="detail-body">
+                <div class="panel" style="margin-bottom:12px">
+                  <h3 class="auth-top-head">投放趋势
+                    <span class="auth-top-tools">
+                      <span class="trend-legend" id="matTrendLegend"></span>
+                      <select id="matTrendGran" title="趋势粒度">
+                        <option value="day">按天</option>
+                        <option value="week" selected>按周</option>
+                        <option value="month">按月</option>
+                      </select>
+                    </span>
+                  </h3>
+                  <div id="ch_mat" class="detail-chart"></div>
+                </div>
+                <div class="panel" style="margin-bottom:12px">
+                  <h3>周明细<span class="panel-hint">周期按「起始日 ~ 结束日」标注</span></h3>
+                  <div class="scroll" style="max-height:300px"><table id="weekTable"><thead></thead><tbody></tbody></table></div>
+                </div>
+                <div class="detail-info" id="detailInfo"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======== 新增素材（单列表 + 口径切换） ======== -->
+      <section id="tab-new" class="page">
+        <div class="filters">
+          <label for="newWeek">时间周期</label>
+          <select id="newWeek"></select>
+          <label for="newMode">新增口径</label>
+          <select id="newMode">
+            <option value="created">按创建时间</option>
+            <option value="seen">按首现周</option>
+          </select>
+          <span class="muted" id="newSummary"></span>
+        </div>
+        <div class="panel">
+          <h3 class="auth-top-head">新增素材<span class="panel-hint" id="newHint">按所选口径与周期列出新增素材</span>
+            <span class="auth-top-tools"><div class="colwrap"><button id="newColBtn" class="colbtn">⚙ 字段设置</button><div id="newColPanel" class="colpanel"></div></div></span>
+          </h3>
+          <div class="scroll" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0; border-bottom: none"><table id="newTable"><thead></thead><tbody></tbody></table></div>
+          <button class="loadmore" id="newMore" style="display:none">加载更多</button>
+        </div>
+
+        <!-- ======== 消耗区间分析（独立日期选择，仅关联本部分） ======== -->
+        <div class="part-section">
+          <div class="part-rangebar">
+            <span class="pr-label">📅 创建日期范围</span>
+            <span class="pr-text" id="partRangeText"></span>
+            <button class="pr-chip" id="prWeekBtn">自然周</button>
+            <button class="pr-chip" id="prMonthBtn">自然月</button>
+            <button class="pr-chip" id="prCustomBtn">自定义</button>
+            <button class="pr-chip" id="prResetBtn">重置</button>
+          </div>
+          <div class="part-buckets" id="partBuckets"></div>
+          <div class="panel">
+            <h3 class="auth-top-head">消耗区间素材列表<span class="panel-hint" id="partListHint">创建日落在所选区间 · 消耗为创建日~往后30天观察期累计</span>
+              <span class="auth-top-tools">
+                <select id="partListSort" title="切换排序指标">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="order">按订单数</option>
+                </select>
+              </span>
+            </h3>
+            <div class="scroll" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0; border-bottom: none"><table id="partListTable"><thead></thead><tbody></tbody></table></div>
+            <button class="loadmore" id="partListMore" style="display:none">加载更多</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 消耗区间日期选择弹层 -->
+      <div class="pr-overlay" id="prOverlay"></div>
+      <div class="pr-pop" id="prPop" style="display:none"></div>
+
+      <!-- ======== ROI 分布 ======== -->
+      <section id="tab-roi" class="page">
+        <div class="filters">
+          <label for="roiMode">统计口径</label>
+          <select id="roiMode">
+            <option value="total">累计整体 ROI（全周期）</option>
+            <option value="last">最新周 ROI（近况）</option>
+          </select>
+          <span class="muted" id="roiSummary"></span>
+        </div>
+        <div class="charts">
+          <div class="panel full"><h3>素材 ROI 区间分布<span class="panel-hint">点击区间卡片或图表柱，查看该区间全部素材</span></h3><div id="ch_roi_dist" class="chart full"></div></div>
+        </div>
+        <div class="panel">
+          <h3>区间明细<span class="panel-hint">卡片内预览 TOP5，点击卡片 / 底部按钮打开钻取抽屉</span></h3>
+          <div class="roi-buckets" id="roiBuckets"></div>
+        </div>
+      </section>
+
+      <!-- ======== AI素材（样式对齐 新增素材 / ROI分布 / 总览作者 板块） ======== -->
+      <section id="tab-ai" class="page">
+        <!-- ① 每周新增 AI 素材（时间周期 + 口径切换 + 字段设置 + 表格，参考【新增素材】） -->
+        <div class="filters">
+          <label for="aiNewWeek">时间周期</label>
+          <select id="aiNewWeek"></select>
+          <label for="aiNewMode">新增口径</label>
+          <select id="aiNewMode">
+            <option value="created">按创建时间</option>
+            <option value="seen">按首现周</option>
+          </select>
+          <span class="muted" id="aiNewSummary"></span>
+        </div>
+        <div class="panel">
+          <h3 class="auth-top-head">新增AI素材<span class="panel-hint" id="aiNewHint">按所选周期列出该周新增的 AI 素材</span>
+            <span class="auth-top-tools"><div class="colwrap"><button id="aiNewColBtn" class="colbtn">⚙ 字段设置</button><div id="aiNewColPanel" class="colpanel"></div></div></span>
+          </h3>
+          <div class="scroll" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0; border-bottom: none"><table id="aiNewTable"><thead></thead><tbody></tbody></table></div>
+          <button class="loadmore" id="aiNewMore" style="display:none">加载更多</button>
+        </div>
+
+        <!-- ② AI素材排行（表格形式，占一整列） -->
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">AI素材排行<span class="panel-hint">按圈选区间字段排序 · 点击素材行查看详情</span>
+              <span class="auth-top-tools">
+                <select id="aiRankProduct" title="按产品筛选"><option value="">全部产品</option></select>
+                <select id="aiRankField">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="netroi">按净成交ROI</option>
+                  <option value="order">按订单数</option>
+                  <option value="weeks">按在投周</option>
+                </select>
+                <select id="aiRankN">
+                  <option value="10">TOP10</option>
+                  <option value="20">TOP20</option>
+                  <option value="30">TOP30</option>
+                </select>
+              </span>
+            </h3>
+            <div class="scroll" style="max-height:540px"><table id="aiRankTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+
+        <!-- ③ AI素材 ROI 区间分布（占一整列，参考【ROI分布】：图表 + 区间明细 + 钻取抽屉） -->
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">AI素材 ROI 区间分布<span class="panel-hint">点击区间卡片 / 图表柱，查看该区间全部 AI 素材</span>
+              <span class="auth-top-tools">
+                <select id="aiRoiMode">
+                  <option value="total">累计整体ROI</option>
+                  <option value="last">最新周ROI</option>
+                </select>
+              </span>
+            </h3>
+            <div id="ch_ai_roi" class="chart full"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>区间明细<span class="panel-hint">卡片内预览 TOP5，点击卡片 / 底部按钮打开钻取抽屉</span></h3>
+          <div class="roi-buckets" id="aiRoiBuckets"></div>
+        </div>
+
+        <!-- ③-2 AI素材作者汇总（占一整列，不区分全职/其他，点击作者行下方展示该作者 AI 素材 TOP） -->
+        <div class="charts">
+          <div class="panel full">
+            <h3>AI素材作者汇总<span class="panel-hint">按 AI 素材作者汇总投放 · 点击作者行查看该作者 AI 素材</span></h3>
+            <div class="scroll" style="max-height:400px"><table id="aiAuthorTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">作者AI素材 TOP<span class="panel-hint" id="aiAuthorTopHint"></span>
+              <span class="auth-top-tools">
+                <select id="aiAuthorTopSort">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="order">按订单数</option>
+                </select>
+              </span>
+            </h3>
+            <div id="aiAuthorTopBody" class="auth-top-body"><div class="empty">点击上方 AI素材作者汇总表中的作者行，查看该作者 AI 素材 TOP10（再点素材行可跳转素材库详情）</div></div>
+          </div>
+        </div>
+
+        <!-- ④ AI素材标识汇总（占一整列，参考【总览】作者板块：点击标识行下方展示素材 TOP） -->
+        <div class="charts">
+          <div class="panel full">
+            <h3>AI素材标识汇总<span class="panel-hint">按 AI 标识汇总投放 · 点击标识行查看该标识素材</span></h3>
+            <div class="scroll" style="max-height:400px"><table id="aiTagTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">AI标识素材 TOP<span class="panel-hint" id="aiTagTopHint"></span>
+              <span class="auth-top-tools">
+                <select id="aiTagTopSort">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="order">按订单数</option>
+                </select>
+              </span>
+            </h3>
+            <div id="aiTagTopBody" class="auth-top-body"><div class="empty">点击上方 AI素材标识汇总表中的标识行，查看该标识 TOP10 素材（再点素材行可跳转素材库详情）</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======== 素材评估（素材状态为核心，布局参考 AI素材板块） ======== -->
+      <section id="tab-evaluation" class="page">
+        <!-- ① 每周新增素材（可按评估状态筛选，参考 AI素材①：时间周期 + 口径 + 字段设置 + 表格） -->
+        <div class="filters">
+          <label for="evNewWeek">时间周期</label>
+          <select id="evNewWeek"></select>
+          <label for="evNewMode">新增口径</label>
+          <select id="evNewMode">
+            <option value="created">按创建时间</option>
+            <option value="seen">按首现周</option>
+          </select>
+          <label for="evNewState">评估状态</label>
+          <select id="evNewState"></select>
+          <span class="muted" id="evNewSummary"></span>
+        </div>
+        <div class="panel">
+          <h3 class="auth-top-head">新增素材（评估明细）<span class="panel-hint" id="evNewHint">按所选周期列出该周新增素材的评估状态</span>
+            <span class="auth-top-tools"><div class="colwrap"><button id="evNewColBtn" class="colbtn">⚙ 字段设置</button><div id="evNewColPanel" class="colpanel"></div></div></span>
+          </h3>
+          <div class="scroll" style="border-radius: var(--radius-sm) var(--radius-sm) 0 0; border-bottom: none"><table id="evNewTable"><thead></thead><tbody></tbody></table></div>
+          <button class="loadmore" id="evNewMore" style="display:none">加载更多</button>
+        </div>
+
+        <!-- ② 素材评估排行（状态筛选 + 字段排序 + TOP N，占一整列，参考 AI素材②） -->
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">素材评估排行<span class="panel-hint">按圈选区间字段排序 · 点击素材行查看详情</span>
+              <span class="auth-top-tools">
+                <select id="evRankState" title="按评估状态筛选"></select>
+                <select id="evRankField">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="netroi">按净成交ROI</option>
+                  <option value="order">按订单数</option>
+                  <option value="weeks">按在投周</option>
+                </select>
+                <select id="evRankN">
+                  <option value="10">TOP10</option>
+                  <option value="20">TOP20</option>
+                  <option value="30">TOP30</option>
+                </select>
+              </span>
+            </h3>
+            <div class="scroll" style="max-height:540px"><table id="evRankTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+
+        <!-- ③ 评估状态汇总（占一整列，参考 AI素材④：状态汇总表 + 点击状态行展示素材 TOP） -->
+        <div class="charts">
+          <div class="panel full">
+            <h3>评估状态汇总<span class="panel-hint">按素材评估状态汇总投放 · 点击状态行查看该状态素材</span></h3>
+            <div class="scroll" style="max-height:400px"><table id="evStateTable"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="panel full">
+            <h3 class="auth-top-head">评估状态素材 TOP<span class="panel-hint" id="evStateTopHint"></span>
+              <span class="auth-top-tools">
+                <select id="evStateTopSort">
+                  <option value="spend">按消耗</option>
+                  <option value="pay">按成交金额</option>
+                  <option value="net">按净成交</option>
+                  <option value="roi">按整体ROI</option>
+                  <option value="order">按订单数</option>
+                </select>
+              </span>
+            </h3>
+            <div id="evStateTopBody" class="auth-top-body"><div class="empty">点击上方 评估状态汇总表中的状态行，查看该状态 TOP10 素材（再点素材行可跳转素材库详情）</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======== 修订记录 ======== -->
+      <section id="tab-revision" class="page">
+        <div class="panel">
+          <h3>修订记录<span class="panel-hint">官方回调 / 重复导入覆盖痕迹</span></h3>
+          <div class="scroll"><table id="revTable"><thead></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ======== ROI 区间钻取抽屉 ======== -->
+<div class="roi-overlay" id="roiOverlay"></div>
+<aside class="roi-drawer" id="roiDrawer" aria-hidden="true">
+  <div class="roi-drawer-head">
+    <div class="grow">
+      <div class="roi-drawer-title">
+        <span class="roi-dot" id="rdDot" style="background:var(--brand)"></span>
+        <span id="rdTitle">区间明细</span>
+      </div>
+      <div class="roi-drawer-sub" id="rdSub"></div>
+    </div>
+    <button class="icon-btn" id="rdClose" title="关闭">✕</button>
+  </div>
+  <div class="roi-drawer-tools">
+    <input class="search-inp" id="rdSearch" placeholder="搜索素材名称 / ID…" />
+    <select id="rdSort" class="rd-sort" title="排序字段">
+      <option value="">默认顺序</option>
+      <option value="spend">按消耗</option>
+      <option value="pay">按成交金额</option>
+      <option value="net">按净成交</option>
+      <option value="roi">按ROI</option>
+      <option value="order">按订单</option>
+      <option value="weeks">按在投周</option>
+    </select>
+    <button id="rdSortDir" class="rd-dir" title="切换升/降序">▼</button>
+    <span class="count" id="rdCount"></span>
+  </div>
+  <div class="roi-drawer-body">
+    <table>
+      <thead><tr><th class="l">素材名称</th><th>ROI</th><th>消耗</th><th>整体成交金额</th><th>在投</th><th>阶段</th></tr></thead>
+      <tbody id="rdTbody"></tbody>
+    </table>
+    <div class="empty" id="rdEmpty" style="display:none">该区间暂无素材</div>
+  </div>
+  <div class="roi-drawer-foot">
+    <button id="rdPrev" class="colbtn">← 上一页</button>
+    <span id="rdPg" class="muted"></span>
+    <button id="rdNext" class="colbtn">下一页 →</button>
+  </div>
+</aside>
+
+<script>
+/*__DASH_DATA__*/
+/*__ACCOUNTS_META__*/
+const EMBEDDED_ACCOUNT = ACCT_EMBEDDED.embedded;
+const ACCOUNTS = ACCT_EMBEDDED.list;
+let D = window.DASH_DATA;
+if (!D) { document.body.innerHTML = '<p style="padding:40px">数据未加载：页面数据缺失。请重新运行「一键导入.bat」生成看板数据后刷新本页。</p>'; throw new Error('no data'); }
+const hasECharts = typeof echarts !== 'undefined';
+if (!hasECharts) document.getElementById('echarts-warn').style.display = 'block';
+
+/* ============ 格式化 ============ */
+const fmtMoney = v => (v==null?'—':Number(v).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}));
+const fmtRoi = v => (v==null?'—':Number(v).toFixed(2));
+const fmtPct = v => (v==null?'—':(v*100).toFixed(2)+'%');
+const fmtDelta = v => { if(v==null) return '—'; const s=(v*100).toFixed(2)+'%'; return `<span class="badge ${v>=0?'pos':'neg'}">${v>=0?'▲':'▼'} ${s}</span>`; };
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const phaseClass = p => p.includes('新')?'new':p.includes('放量')?'up':p.includes('衰退')?'down':p.includes('停投')?'stop':'';
+/* 周周期显示：起始日 ~ 结束日，避免"每周第一天"歧义 */
+const weekEndOf = w => { const i = D.weeks.indexOf(w); return (i>=0 && D.week_ends && D.week_ends[i]) ? D.week_ends[i] : w; };
+const weekLabel = (w, full) => {
+  const e = weekEndOf(w);
+  return full ? (w + ' ~ ' + e) : (w.slice(5) + '~' + e.slice(5));
+};
+
+/* ============ 产品线解析（优先名称拆解的归属产品，兜底关键词） ============ */
+function lineOf(m){
+  if (m.is_aggregate) return 'AIGC素材集';
+  if (m.product) return m.product;
+  const n = m.name || '';
+  if (n.includes('示例产品-2kg')) return '示例产品';
+  if (n.includes('示例猫砂')) return '示例猫砂';
+  if (n.includes('示例猫粮')) return '示例猫粮';
+  if (n.includes('示例')) return '其他示例';
+  return '其他';
+}
+const LINE_COLORS = { '示例产品':'#4f9d86','示例猫砂':'#4c7faf','示例猫粮':'#c9a13a','AIGC素材集':'#8a6a1f',
+  '其他示例':'#93a098','其他':'#b9a48c' };
+
+/* ============ 图表 ============ */
+const chartInst = {};
+function mkChart(id, opt){
+  if(!hasECharts) return null;
+  const el = document.getElementById(id);
+  if(!el) return null;
+  let ch = echarts.getInstanceByDom(el);
+  if(!ch) ch = echarts.init(el);
+  ch.setOption(opt, true);
+  chartInst[id] = ch;
+  return ch;
+}
+window.addEventListener('resize', ()=>Object.values(chartInst).forEach(c=>c&&c.resize()));
+const AXIS = { axisLine:{lineStyle:{color:'#e6e9e2'}}, axisLabel:{color:'#8d9a92'} };
+const GRID_LINE = { splitLine:{lineStyle:{color:'#eef1ec'}} };
+
+/* ============ 时间圈选：任意区间聚合引擎 ============
+   days 每项紧凑数组：[0]日期 [1]整体消耗 [2]整体成交金额 [3]净成交金额
+                      [4]净成交订单数 [5]1小时退款率 [6]结算率（均为 0~1 小数）
+   区间聚合规则与后端一致：金额求和；整体ROI=整体成交金额÷消耗；净成交ROI=净成交金额÷消耗；
+   退款率按整体成交金额加权、结算率按净成交金额加权。 */
+let DAY_MIN = '', DAY_MAX = '', RANGE = null;   // 由 startApp() 依据当前账户数据初始化
+let RV = null;   // 当前区间视图（materials/trend/totals/sources/top10/weeks/week_ends）
+const round2 = v => Math.round((v||0)*100)/100;
+const currentMats = () => RV ? RV.materials : D.materials;
+
+function isoWeekStart(s){
+  const dt = new Date(s + 'T00:00:00');
+  const dow = (dt.getDay() + 6) % 7;   // 周一=0
+  dt.setDate(dt.getDate() - dow);
+  const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,'0'), dd=String(dt.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;   // 本地日期，避免 toISOString 的 UTC 时区错位
+}
+function isoWeekEnd(s){
+  const d = new Date(s + 'T00:00:00');
+  d.setDate(d.getDate() + 6);
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+/* 素材区间聚合 */
+function aggRange(m, start, end){
+  const days = m.days || [];
+  let spend=0, pay=0, net=0, order=0, rrN=0, rrD=0, srN=0, srD=0, n=0, first=null, last=null;
+  for (let i=0;i<days.length;i++){
+    const d = days[i];
+    if (d[0] < start || d[0] > end) continue;
+    n++; if (!first) first = d[0]; last = d[0];
+    spend += d[1]||0; pay += d[2]||0; net += d[3]||0; order += d[4]||0;
+    rrN += (d[5]||0)*(d[2]||0); rrD += d[2]||0;
+    srN += (d[6]||0)*(d[3]||0); srD += d[3]||0;
+  }
+  return {
+    days:n, first, last, spend, pay, net, order,
+    roi: pay ? pay/spend : null, net_roi: net ? net/spend : null,
+    refund: rrD ? rrN/rrD : null, settle: srD ? srN/srD : null,
+  };
+}
+/* 素材区间内按周聚合 series */
+function aggDaysToWeeks(days, start, end){
+  const buckets = new Map();
+  (days||[]).forEach(d=>{
+    if (d[0] < start || d[0] > end) return;
+    const wk = isoWeekStart(d[0]);
+    let a = buckets.get(wk);
+    if (!a){ a=[0,0,0,0,0,0,0,0,0,0]; buckets.set(wk,a); } // spend,pay,net,order,rrN,rrD,srN,srD,days,lastDay
+    a[0]+=d[1]||0; a[1]+=d[2]||0; a[2]+=d[3]||0; a[3]+=d[4]||0;
+    a[4]+=(d[5]||0)*(d[2]||0); a[5]+=d[2]||0;
+    a[6]+=(d[6]||0)*(d[3]||0); a[7]+=d[3]||0;
+    a[8]++; a[9]=d[0];
+  });
+  const out=[];
+  [...buckets.keys()].sort().forEach(wk=>{
+    const a=buckets.get(wk);
+    const spend=a[0], pay=a[1], net=a[2];
+    out.push({
+      week: wk, week_end: isoWeekEnd(wk), day_count: a[8], last_day: a[9],
+      spend: round2(spend), pay: round2(pay), net_pay: round2(net), order_count: round2(a[3]),
+      roi: pay? pay/spend:null, net_roi: net? net/spend:null,
+      refund_rate_1h: a[5]? a[4]/a[5]:null, settle_rate: a[7]? a[6]/a[7]:null,
+      evaluation:'',
+    });
+  });
+  return out;
+}
+/* 全局趋势（区间内所有素材按周聚合） */
+function buildGlobalTrend(start, end){
+  const dayAgg = new Map();   // date -> [spend,pay,net,order,rrN,rrD,srN,srD]
+  D.materials.forEach(m=>{
+    (m.days||[]).forEach(d=>{
+      if (d[0] < start || d[0] > end) return;
+      let b = dayAgg.get(d[0]);
+      if (!b){ b=[0,0,0,0,0,0,0,0]; dayAgg.set(d[0],b); }
+      b[0]+=d[1]||0; b[1]+=d[2]||0; b[2]+=d[3]||0; b[3]+=d[4]||0;
+      b[4]+=(d[5]||0)*(d[2]||0); b[5]+=d[2]||0;
+      b[6]+=(d[6]||0)*(d[3]||0); b[7]+=d[3]||0;
+    });
+  });
+  const buckets = new Map();
+  dayAgg.forEach((b, date)=>{
+    const wk = isoWeekStart(date);
+    let a = buckets.get(wk);
+    if (!a){ a=[0,0,0,0,0,0,0,0]; buckets.set(wk,a); }
+    a[0]+=b[0]; a[1]+=b[1]; a[2]+=b[2]; a[3]+=b[3];
+    a[4]+=b[4]; a[5]+=b[5]; a[6]+=b[6]; a[7]+=b[7];
+  });
+  const out=[];
+  [...buckets.keys()].sort().forEach(wk=>{
+    const a=buckets.get(wk);
+    const spend=a[0], pay=a[1], net=a[2];
+    out.push({
+      week: wk, week_end: isoWeekEnd(wk),
+      count: 0, spend: round2(spend), pay: round2(pay), net_pay: round2(net),
+      order_count: round2(a[3]),
+      roi: pay? pay/spend:0, net_roi: net? net/spend:0,
+      refund_rate_1h: a[5]? a[4]/a[5]:null, settle_rate: a[7]? a[6]/a[7]:null,
+    });
+  });
+  return out;
+}
+/* 构建当前区间视图 */
+function buildRangeData(){
+  const start = RANGE.start, end = RANGE.end;
+  const materials = D.materials.map(m=>{
+    const a = aggRange(m, start, end);
+    const series = aggDaysToWeeks(m.days||[], start, end);
+    const lastW = series.length ? series[series.length-1] : null;
+    const prevW = series.length >= 2 ? series[series.length-2] : null;
+    return Object.assign({}, m, {
+      total_spend: round2(a.spend), total_pay: round2(a.pay),
+      total_net_pay: round2(a.net), total_order_count: round2(a.order),
+      total_roi: a.roi, total_net_roi: a.net_roi,
+      last_refund_rate_1h: a.refund, last_settle_rate: a.settle,
+      active_days: a.days, active_weeks: series.length,
+      first_seen: a.first || m.first_seen,
+      last_week: lastW ? lastW.week : m.last_week,
+      last_spend: lastW ? lastW.spend : 0,
+      last_pay: lastW ? lastW.pay : 0,
+      last_net_pay: lastW ? lastW.net_pay : 0,
+      last_order_count: lastW ? lastW.order_count : 0,
+      last_roi: lastW ? lastW.roi : null,
+      last_net_roi: lastW ? lastW.net_roi : null,
+      spend_delta: (prevW && prevW.spend>0 && lastW) ? lastW.spend/prevW.spend-1 : null,
+      pay_delta:   (prevW && prevW.pay>0 && lastW)   ? lastW.pay/prevW.pay-1   : null,
+      roi_delta:   (prevW && prevW.roi && lastW && lastW.roi!=null) ? lastW.roi/prevW.roi-1 : null,
+      series, _agg: a,
+    });
+  });
+  const trend = buildGlobalTrend(start, end);
+  const totals = {
+    spend: round2(trend.reduce((s,r)=>s+r.spend,0)),
+    pay: round2(trend.reduce((s,r)=>s+r.pay,0)),
+    net_pay: round2(trend.reduce((s,r)=>s+r.net_pay,0)),
+    order_count: round2(trend.reduce((s,r)=>s+r.order_count,0)),
+    material_count: materials.filter(m=>m.active_days>0).length,
+    week_count: trend.length,
+  };
+  const srcAgg = {};
+  materials.forEach(m=>{
+    const src = m.source || '未知';
+    const a = srcAgg[src] || (srcAgg[src]={count:0,spend:0,pay:0});
+    a.count++; a.spend+=m.total_spend||0; a.pay+=m.total_pay||0;
+  });
+  const srcTotal = Object.values(srcAgg).reduce((s,a)=>s+a.spend,0) || 1;
+  const sources = Object.entries(srcAgg).sort((x,y)=>y[1].spend-x[1].spend).map(([source,a])=>({
+    source, count:a.count, spend:round2(a.spend), pay:round2(a.pay), ratio:a.spend/srcTotal,
+  }));
+  const top10 = materials.filter(m=>m.total_spend>0).sort((x,y)=>y.total_spend-x.total_spend).slice(0,10).map(c=>({
+    name:c.name, mid:c.mid, source:c.source, total_spend:c.total_spend, total_pay:c.total_pay,
+    total_net_pay:c.total_net_pay, total_roi:c.total_roi, total_net_roi:c.total_net_roi,
+    is_aggregate:c.is_aggregate,
+  }));
+  return { materials, trend, totals, sources, top10, weeks: trend.map(r=>r.week), week_ends: trend.map(r=>r.week_end) };
+}
+/* 圈选应用（仅更新范围文案并刷新各板块） */
+function applyRange(start, end){
+  if (!start || !end) return;
+  if (start > end){ const t=start; start=end; end=t; }
+  if (start < DAY_MIN) start = DAY_MIN;
+  if (end > DAY_MAX) end = DAY_MAX;
+  if (start > end) { start = DAY_MIN; end = DAY_MAX; }
+  RANGE = { start, end };
+  RV = buildRangeData();
+  const el = document.getElementById('gRangeText');
+  if (el) el.textContent = `${String(RANGE.start).replace(/-/g,'/')} - ${String(RANGE.end).replace(/-/g,'/')}`;
+  refreshAll();
+}
+function refreshAll(){
+  if (renderedTabs.overview) renderOverview();
+  if (renderedTabs.materials) initMaterialsTab();
+  if (renderedTabs.new) renderNewTab();
+  if (renderedTabs.roi) renderRoiTab();
+  if (renderedTabs.ai) renderAiTab();
+  if (renderedTabs.evaluation) renderEvTab();
+}
+/* 全局时间圈选按钮：复用通用日期选择器 */
+const globalSel = ()=>({start:RANGE.start, end:RANGE.end});
+document.getElementById('gWeekBtn').onclick = function(){ openDatePicker('week', applyRange, globalSel, RANGE.end||DAY_MAX, this); };
+document.getElementById('gMonthBtn').onclick = function(){ openDatePicker('month', applyRange, globalSel, RANGE.end||DAY_MAX, this); };
+document.getElementById('gCustomBtn').onclick = function(){ openDatePicker('custom', applyRange, globalSel, RANGE.end||DAY_MAX, this); };
+document.getElementById('gResetBtn').onclick = ()=>applyRange(DAY_MIN, DAY_MAX);
+
+/* ============ 总览 ============ */
+function renderOverview(){
+  const S = RV || D;
+  const t = S.totals, tr = S.trend;
+  const last = tr.length? tr[tr.length-1] : {};
+  const KPI = (ic, label, value, unit, meta) => `
+    <div class="kpi">
+      <div class="kpi-label"><span class="kpi-ic">${ic}</span>${label}</div>
+      <div class="kpi-value">${value}${unit?`<span class="unit">${unit}</span>`:''}</div>
+      <div class="kpi-meta">${meta}</div>
+    </div>`;
+  const mainCards = [
+    KPI('¥','区间消耗', fmtMoney(t.spend), '元', `${S.weeks.length} 周合计`),
+    KPI('支','区间成交金额', fmtMoney(t.pay), '元', '整体成交金额'),
+    KPI('返','区间整体ROI', fmtRoi(t.spend? t.pay/t.spend : 0), '', '整体成交金额 ÷ 消耗'),
+    KPI('净','区间净成交', fmtMoney(t.net_pay), '元', `区间订单 ${fmtMoney(t.order_count)} 单`),
+  ];
+  const wk = last.week || '';
+  const subCards = [
+    KPI('末','末周消耗', fmtMoney(last.spend||0), '元', `${wk} 当周`),
+    KPI('末','末周成交金额', fmtMoney(last.pay||0), '元', `${wk} 当周`),
+    KPI('末','末周整体ROI', fmtRoi(last.roi||0), '', `${wk} 当周`),
+    KPI('末','末周素材条数', last.count||0, '', `${wk} 当周`),
+  ];
+  document.getElementById('statCards').innerHTML =
+    `<div class="kpi-row kpi-row--main">${mainCards.join('')}</div>` +
+    `<div class="kpi-row kpi-row--sub">${subCards.join('')}</div>`;
+  document.querySelectorAll('#statCards .kpi-row--sub .kpi').forEach((el,i)=>{
+    const d = [last.spend_delta, last.pay_delta, last.roi_delta][i];
+    if (d != null) el.querySelector('.kpi-meta').innerHTML = `环比 ${fmtDelta(d)}`;
+  });
+  document.getElementById('geninfoTop').innerHTML = `共 <b>${S.weeks.length}</b> 周 · 区间消耗 <b>${fmtMoney(t.spend)}</b> 元`;
+
+  const weeks = tr.map(r=>r.week);
+  mkChart('ch_roi', {
+    tooltip:{trigger:'axis', formatter: p => {
+      const d = p && p[0];
+      if (!d) return '';
+      const v = d.value==null ? '—' : Number(d.value).toFixed(2);
+      return `${d.axisValue}<br/>${d.marker}整体ROI：<b>${v}</b>`;
+    }},
+    grid:{left:52,right:20,top:30,bottom:28},
+    xAxis:{type:'category',data:weeks,...AXIS},
+    yAxis:{type:'value',...GRID_LINE},
+    animation:false,
+    series:[{
+      name:'整体ROI',type:'line',data:tr.map(r=>r.roi),smooth:true,symbolSize:7,
+      lineStyle:{color:'#1e5b4c',width:2.5},itemStyle:{color:'#1e5b4c'},
+      areaStyle:{color:'rgba(30,91,76,.08)'},
+      markLine:{silent:true,symbol:'none',data:[{yAxis:1}],lineStyle:{color:'#c0523f',type:'dashed',width:1},label:{color:'#8d9a92',fontSize:10,formatter:'盈亏线 1.0'}}
+    }]
+  });
+  renderAuthorTables();
+  renderProductTables();
+}
+
+/* 作者维度素材投放表（全职/其他分开，跟随圈选区间，规则与后端一致） */
+function buildAuthorRows(type){
+  const isFull = type === 'fulltime';
+  const start = RANGE.start, end = RANGE.end;
+  const map = {};
+  D.materials.forEach(m=>{
+    const a = m.author;
+    if (!a) return;
+    if (FULLTIME_AUTHORS.includes(a) !== isFull) return;
+    const g = aggRange(m, start, end);
+    let b = map[a] || (map[a] = {count:0, spend:0, pay:0, net:0, order:0, rrN:0, rrD:0, srN:0, srD:0});
+    b.count++; b.spend += g.spend; b.pay += g.pay; b.net += g.net; b.order += g.order;
+    b.rrN += (g.refund||0)*(g.pay||0); b.rrD += g.pay||0;
+    b.srN += (g.settle||0)*(g.net||0); b.srD += g.net||0;
+  });
+  return Object.entries(map).map(([author,b])=>({
+    author,
+    count: b.count,
+    spend: round2(b.spend), pay: round2(b.pay), net: round2(b.net), order: round2(b.order),
+    roi: b.pay ? b.pay/b.spend : null,
+    net_roi: b.net ? b.net/b.spend : null,
+    refund: b.rrD ? b.rrN/b.rrD : null,
+    settle: b.srD ? b.srN/b.srD : null,
+  }));
+}
+const AUTH_COLS = [
+  {k:'author', l:'作者', left:true},
+  {k:'count', l:'素材数'},
+  {k:'spend', l:'消耗'},
+  {k:'pay', l:'成交金额'},
+  {k:'net', l:'净成交'},
+  {k:'roi', l:'整体ROI'},
+  {k:'net_roi', l:'净成交ROI'},
+  {k:'refund', l:'退款率'},
+  {k:'settle', l:'结算率'},
+];
+let authorSort = { key:'spend', dir:'desc' };
+function renderAuthorTable(tableId, rows){
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  table.querySelector('thead').innerHTML = '<tr>'+AUTH_COLS.map(c=>{
+    const ic = authorSort.key===c.k ? (authorSort.dir==='asc'?'▲':'▼') : '⇅';
+    return `<th class="${c.left?'l ':''}psort" data-k="${c.k}" title="点击排序">${c.l}<span class="sort-ic">${ic}</span></th>`;
+  }).join('')+'</tr>';
+  const sk = authorSort.key;
+  const sorted = [...rows].sort((a,b)=>{
+    if (sk==='author'){ const va=a.author||'', vb=b.author||''; return authorSort.dir==='asc' ? va.localeCompare(vb,'zh') : vb.localeCompare(va,'zh'); }
+    let va=a[sk], vb=b[sk];
+    if (va==null) va = authorSort.dir==='asc' ? Infinity : -Infinity;
+    if (vb==null) vb = authorSort.dir==='asc' ? Infinity : -Infinity;
+    return authorSort.dir==='asc' ? va-vb : vb-va;
+  });
+  table.querySelector('tbody').innerHTML = sorted.length
+    ? sorted.map(r=>`<tr data-author="${esc(r.author)}" class="${r.author===activeAuthor?'act':''}">
+        <td class="l">${esc(r.author)}</td>
+        <td>${r.count}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${fmtRoi(r.net_roi)}</td>
+        <td>${fmtPct(r.refund)}</td>
+        <td>${fmtPct(r.settle)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" class="empty">该区间无投放数据</td></tr>';
+}
+let activeAuthor = null;
+const authTopSortVal = ()=> (document.getElementById('authTopSort')||{value:'spend'}).value;
+function authorTopMats(author){
+  const start = RANGE.start, end = RANGE.end;
+  const list = [];
+  D.materials.forEach(m=>{
+    if (m.author !== author) return;
+    const g = aggRange(m, start, end);
+    list.push({ key:m.key, name:m.name||'', product:m.product||'', channel:m.channel||'',
+      spend:g.spend, pay:g.pay, net:g.net, order:g.order, roi:g.pay?g.pay/g.spend:null, phase:m.phase||'' });
+  });
+  const k = authTopSortVal();
+  const key = k==='roi' ? 'roi' : k==='net' ? 'net' : k==='order' ? 'order' : k==='pay' ? 'pay' : 'spend';
+  return list.sort((a,b)=>(b[key]||0)-(a[key]||0)).slice(0,10);
+}
+function renderAuthTop(){
+  const hint = document.getElementById('authTopHint');
+  const body = document.getElementById('authTopBody');
+  if (!activeAuthor){
+    hint.textContent = '';
+    body.innerHTML = '<div class="empty">点击上方作者素材表中的作者行，查看该作者 TOP10 素材（再点素材行可跳转素材库详情）</div>';
+    return;
+  }
+  hint.textContent = `${activeAuthor} · 区间 ${RANGE.start} ~ ${RANGE.end} · 点击素材行查看详情`;
+  const rows = authorTopMats(activeAuthor);
+  body.innerHTML = rows.length
+    ? `<table class="auth-table"><thead><tr>
+        <th>#</th><th class="l">素材名称</th><th>产品</th><th>渠道</th><th>消耗</th><th>成交金额</th><th>净成交</th><th>整体ROI</th><th>订单</th><th>阶段</th>
+      </tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr data-key="${esc(r.key)}" title="点击查看素材详情">
+        <td>${i+1}</td>
+        <td class="l" title="${esc(r.name)}">${esc(r.name.length>40? r.name.slice(0,40)+'…' : r.name)}</td>
+        <td>${esc(r.product)||'—'}</td>
+        <td>${esc(r.channel)||'—'}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${Number(r.order||0).toLocaleString('zh-CN')}</td>
+        <td>${esc(r.phase)||'—'}</td>
+      </tr>`).join('')}
+      </tbody></table>`
+    : '<div class="empty">该作者当前区间无投放素材</div>';
+}
+function setActiveAuthor(author){
+  activeAuthor = author;
+  renderAuthorTable('authFullTable', buildAuthorRows('fulltime'));
+  renderAuthorTable('authOtherTable', buildAuthorRows('other'));
+  renderAuthTop();
+}
+function renderAuthorTables(){
+  renderAuthorTable('authFullTable', buildAuthorRows('fulltime'));
+  renderAuthorTable('authOtherTable', buildAuthorRows('other'));
+  renderAuthTop();
+}
+/* 作者表联动：点击表头排序、点击作者行查看 TOP10 */
+['authFullTable','authOtherTable'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', e=>{
+    const th = e.target.closest('th.psort');
+    if (th){
+      const k = th.dataset.k;
+      if (authorSort.key===k) authorSort.dir = authorSort.dir==='asc' ? 'desc' : 'asc';
+      else authorSort = { key:k, dir:'desc' };
+      renderAuthorTables();
+      return;
+    }
+    const tr = e.target.closest('tr[data-author]');
+    if (tr) setActiveAuthor(tr.dataset.author);
+  });
+});
+document.getElementById('authTopSort').addEventListener('change', ()=>{ if (activeAuthor) renderAuthTop(); });
+document.getElementById('authTopBody').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-key]');
+  if (!tr) return;
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(tr.dataset.key), 120);
+});
+
+/* 产品维度素材投放表 + 产品素材 TOP（联动，逻辑与作者版一致） */
+function buildProductRows(){
+  const start = RANGE.start, end = RANGE.end;
+  const map = {};
+  D.materials.forEach(m=>{
+    const p = m.product || (m.is_aggregate ? 'AIGC素材集' : '未归类');
+    const g = aggRange(m, start, end);
+    let b = map[p] || (map[p] = {count:0, spend:0, pay:0, net:0, order:0, rrN:0, rrD:0, srN:0, srD:0});
+    b.count++; b.spend += g.spend; b.pay += g.pay; b.net += g.net; b.order += g.order;
+    b.rrN += (g.refund||0)*(g.pay||0); b.rrD += g.pay||0;
+    b.srN += (g.settle||0)*(g.net||0); b.srD += g.net||0;
+  });
+  return Object.entries(map).map(([product,b])=>({
+    product, count:b.count,
+    spend: round2(b.spend), pay: round2(b.pay), net: round2(b.net), order: round2(b.order),
+    roi: b.pay ? b.pay/b.spend : null, net_roi: b.net ? b.net/b.spend : null,
+    refund: b.rrD ? b.rrN/b.rrD : null, settle: b.srD ? b.srN/b.srD : null,
+  })).sort((x,y)=>y.spend-x.spend);
+}
+let activeProduct = null;
+const prodTopSortVal = ()=> (document.getElementById('prodTopSort')||{value:'spend'}).value;
+let productSort = { key:'spend', dir:'desc' };
+const PRODUCT_COLS = [
+  {k:'product', l:'产品', left:true},
+  {k:'count', l:'素材数'},
+  {k:'spend', l:'消耗'},
+  {k:'pay', l:'成交金额'},
+  {k:'net', l:'净成交'},
+  {k:'roi', l:'整体ROI'},
+  {k:'net_roi', l:'净成交ROI'},
+  {k:'refund', l:'退款率'},
+  {k:'settle', l:'结算率'},
+];
+function renderProductTable(rows){
+  const table = document.getElementById('prodTable');
+  if (!table) return;
+  table.querySelector('thead').innerHTML = '<tr>'+PRODUCT_COLS.map(c=>{
+    const ic = productSort.key===c.k ? (productSort.dir==='asc'?'▲':'▼') : '⇅';
+    return `<th class="${c.left?'l ':''}psort" data-k="${c.k}" title="点击排序">${c.l}<span class="sort-ic">${ic}</span></th>`;
+  }).join('')+'</tr>';
+  const sk = productSort.key;
+  const sorted = [...rows].sort((a,b)=>{
+    if (sk==='product'){ const va=a.product||'', vb=b.product||''; return productSort.dir==='asc' ? va.localeCompare(vb,'zh') : vb.localeCompare(va,'zh'); }
+    let va=a[sk], vb=b[sk];
+    if (va==null) va = productSort.dir==='asc' ? Infinity : -Infinity;
+    if (vb==null) vb = productSort.dir==='asc' ? Infinity : -Infinity;
+    return productSort.dir==='asc' ? va-vb : vb-va;
+  });
+  table.querySelector('tbody').innerHTML = sorted.length
+    ? sorted.map(r=>`<tr data-product="${esc(r.product)}" class="${r.product===activeProduct?'act':''}">
+        <td class="l">${esc(r.product)}</td>
+        <td>${r.count}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${fmtRoi(r.net_roi)}</td>
+        <td>${fmtPct(r.refund)}</td>
+        <td>${fmtPct(r.settle)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" class="empty">该区间无投放数据</td></tr>';
+}
+function productTopMats(product){
+  const start = RANGE.start, end = RANGE.end;
+  const list = [];
+  D.materials.forEach(m=>{
+    const p = m.product || (m.is_aggregate ? 'AIGC素材集' : '未归类');
+    if (p !== product) return;
+    const g = aggRange(m, start, end);
+    list.push({ key:m.key, name:m.name||'', author:m.author||'', channel:m.channel||'',
+      spend:g.spend, pay:g.pay, net:g.net, order:g.order, roi:g.pay?g.pay/g.spend:null, phase:m.phase||'' });
+  });
+  const k = prodTopSortVal();
+  const key = k==='roi' ? 'roi' : k==='net' ? 'net' : k==='order' ? 'order' : k==='pay' ? 'pay' : 'spend';
+  return list.sort((a,b)=>(b[key]||0)-(a[key]||0)).slice(0,10);
+}
+function renderProductTop(){
+  const hint = document.getElementById('prodTopHint');
+  const body = document.getElementById('prodTopBody');
+  if (!activeProduct){
+    hint.textContent = '';
+    body.innerHTML = '<div class="empty">点击上方产品素材投放效果表中的产品行，查看该产品 TOP10 素材（再点素材行可跳转素材库详情）</div>';
+    return;
+  }
+  hint.textContent = `${activeProduct} · 区间 ${RANGE.start} ~ ${RANGE.end} · 点击素材行查看详情`;
+  const rows = productTopMats(activeProduct);
+  body.innerHTML = rows.length
+    ? `<table class="auth-table"><thead><tr>
+        <th>#</th><th class="l">素材名称</th><th>作者</th><th>渠道</th><th>消耗</th><th>成交金额</th><th>净成交</th><th>整体ROI</th><th>订单</th><th>阶段</th>
+      </tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr data-key="${esc(r.key)}" title="点击查看素材详情">
+        <td>${i+1}</td>
+        <td class="l" title="${esc(r.name)}">${esc(r.name.length>40? r.name.slice(0,40)+'…' : r.name)}</td>
+        <td>${esc(r.author)||'—'}</td>
+        <td>${esc(r.channel)||'—'}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${Number(r.order||0).toLocaleString('zh-CN')}</td>
+        <td>${esc(r.phase)||'—'}</td>
+      </tr>`).join('')}
+      </tbody></table>`
+    : '<div class="empty">该产品当前区间无投放素材</div>';
+}
+function setActiveProduct(product){
+  activeProduct = product;
+  renderProductTable(buildProductRows());
+  renderProductTop();
+}
+function renderProductTables(){
+  renderProductTable(buildProductRows());
+  renderProductTop();
+}
+/* 产品表联动：点击表头排序、点击产品行查看 TOP、点击素材行跳转素材库详情 */
+document.getElementById('prodTable').addEventListener('click', e=>{
+  const th = e.target.closest('th.psort');
+  if (th){
+    const k = th.dataset.k;
+    if (productSort.key===k) productSort.dir = productSort.dir==='asc' ? 'desc' : 'asc';
+    else productSort = { key:k, dir:'desc' };
+    renderProductTable(buildProductRows());
+    renderProductTop();
+    return;
+  }
+  const tr = e.target.closest('tr[data-product]');
+  if (tr) setActiveProduct(tr.dataset.product);
+});
+document.getElementById('prodTopSort').addEventListener('change', ()=>{ if (activeProduct) renderProductTop(); });
+document.getElementById('prodTopBody').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-key]');
+  if (!tr) return;
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(tr.dataset.key), 120);
+});
+
+/* ============ 字段管理（localStorage 偏好） ============ */
+function loadPrefs(key, def){ try{ const v=JSON.parse(localStorage.getItem('qc_'+key)); if(Array.isArray(v)&&v.length) return v; }catch(e){} return def; }
+function savePrefs(key, v){ try{ localStorage.setItem('qc_'+key, JSON.stringify(v)); }catch(e){} }
+class ColMgr {
+  constructor(tableId, fields, prefsKey, onChange){
+    this.tableId = tableId; this.fields = fields; this.prefsKey = prefsKey; this.onChange = onChange;
+    this.order = loadPrefs(prefsKey, fields.map(f=>f.key));
+    fields.forEach(f=>{ if(this.order.indexOf(f.key)===-1) this.order.push(f.key); });
+    this.panelEl = null;
+  }
+  visible(){ return this.order.slice(); }
+  attach(btnId, panelId){
+    const btn = document.getElementById(btnId);
+    this.panelEl = document.getElementById(panelId);
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const isOpen = getComputedStyle(this.panelEl).display !== 'none';
+      document.querySelectorAll('.colpanel').forEach(p=>{ p.style.display='none'; });
+      if (!isOpen){
+        this.rebuildPanel();
+        const p = this.panelEl;
+        p.style.top = ''; p.style.bottom = ''; p.style.display = 'block';
+        const r = p.getBoundingClientRect();
+        if (r.bottom > window.innerHeight - 6){
+          p.style.top = 'auto';
+          p.style.bottom = 'calc(100% + 6px)';
+        }
+      }
+    };
+  }
+  rebuildPanel(){
+    const panel = this.panelEl; if (!panel) return;
+    panel.innerHTML = '';
+    this.fields.slice().sort((a,b)=>this.order.indexOf(a.key)-this.order.indexOf(b.key)).forEach(f=>{
+      const r = document.createElement('div'); r.className='colrow';
+      const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = this.order.indexOf(f.key)!==-1;
+      cb.onchange = ()=>this.toggle(f.key, cb.checked);
+      const up = document.createElement('button'); up.textContent='↑'; up.title='上移'; up.onclick = ()=>this.move(f.key,-1);
+      const dn = document.createElement('button'); dn.textContent='↓'; dn.title='下移'; dn.onclick = ()=>this.move(f.key,1);
+      const sp = document.createElement('span'); sp.textContent = f.label;
+      r.append(cb, up, dn, sp); panel.appendChild(r);
+    });
+    const reset = document.createElement('button'); reset.className='colreset'; reset.textContent='恢复默认';
+    reset.onclick = ()=>this.reset(); panel.appendChild(reset);
+  }
+  toggle(key,on){ const i=this.order.indexOf(key); if(on&&i===-1)this.order.push(key); if(!on&&i!==-1)this.order.splice(i,1); this.afterChange(); }
+  move(key,dir){ const i=this.order.indexOf(key),j=i+dir; if(i<0||j<0||j>=this.order.length)return; const t=this.order[i];this.order[i]=this.order[j];this.order[j]=t; this.afterChange(); }
+  reset(){ this.order = this.fields.map(f=>f.key); this.afterChange(); }
+  afterChange(){ savePrefs(this.prefsKey,this.order); if(this.panelEl)this.rebuildPanel(); this.onChange(); }
+}
+document.addEventListener('click', e=>{ if(!e.target.closest('.colwrap')) document.querySelectorAll('.colpanel').forEach(p=>p.style.display='none'); });
+
+/* ============ 素材库 · 主从布局 ============ */
+const MAT_FIELDS = [
+  {key:'name', label:'素材名称', align:'l'},
+  {key:'product', label:'产品'},
+  {key:'author', label:'作者'},
+  {key:'channel', label:'渠道'},
+  {key:'mix_author', label:'混剪达人'},
+  {key:'phase', label:'阶段'},
+  {key:'flags', label:'预警'},
+  {key:'total_spend', label:'累计消耗'},
+  {key:'total_pay', label:'累计成交金额'},
+  {key:'total_net_pay', label:'累计净成交'},
+  {key:'total_net_roi', label:'净成交ROI'},
+  {key:'total_order_count', label:'累计订单'},
+  {key:'total_roi', label:'整体ROI'},
+  {key:'last_spend', label:'本周消耗'},
+  {key:'last_net_roi', label:'本周净成交ROI'},
+  {key:'last_roi', label:'本周ROI'},
+  {key:'spend_delta', label:'消耗环比'},
+  {key:'active_weeks', label:'在投周'},
+  {key:'spark', label:'迷你趋势'},
+];
+const MAT_FIELD_MAP = Object.fromEntries(MAT_FIELDS.map(f=>[f.key,f]));
+const matState = { page:0, pageSize:60, q:'', phase:'', line:'', channel:'', authors:[], sort:'spend', filtered:[] };
+const FULLTIME_AUTHORS = ['作者甲','作者乙'];
+const matMgr = new ColMgr('matList', MAT_FIELDS, 'mat', ()=>renderMatPage());
+matMgr.attach('matColBtn', 'matColPanel');
+
+function sparkSvg(series, w=86, h=26){
+  const vals = (series||[]).map(s=>s.spend||0).slice(-8);
+  const max = Math.max(...vals, 1);
+  const n = vals.length;
+  if (n < 2) return '<svg class="mat-spark" width="'+w+'" height="'+h+'" style="opacity:.35"><line x1="0" y1="'+(h-2)+'" x2="'+w+'" y2="'+(h-2)+'" stroke="#8d9a92" stroke-width="1.5" stroke-dasharray="2 3"/></svg>';
+  const pts = vals.map((v,i)=>`${(i/(n-1)*w).toFixed(1)},${(h-3-(v/max)*(h-6)).toFixed(1)}`).join(' ');
+  const line = `<polyline points="${pts}" fill="none" stroke="#1e5b4c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const last = pts.split(' ').pop().split(',');
+  const dot = `<circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="#c9a13a" stroke="#fff" stroke-width="1"/>`;
+  return `<svg class="mat-spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${line}${dot}</svg>`;
+}
+
+function renderMatItem(m){
+  const cols = matMgr.visible();
+  const badges = [];
+  if (m.is_aggregate) badges.push('<span class="tag agg">聚合</span>');
+  if (cols.includes('phase')) badges.push(`<span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span>`);
+  (m.flags||[]).forEach(f=>{ if(cols.includes('flags')) badges.push(`<span class="tag flag">${f}</span>`); });
+  const fields = [];
+  const F = {
+    product: m=>esc(m.product)||'—',
+    author: m=>esc(m.author)||'—',
+    channel: m=>esc(m.channel)||'—',
+    mix_author: m=>esc(m.mix_author)||'—',
+    total_spend: m=>fmtMoney(m.total_spend),
+    total_pay: m=>fmtMoney(m.total_pay),
+    total_net_pay: m=>fmtMoney(m.total_net_pay),
+    total_net_roi: m=>fmtRoi(m.total_net_roi),
+    total_order_count: m=>Number(m.total_order_count||0).toLocaleString('zh-CN'),
+    total_roi: m=>fmtRoi(m.total_roi),
+    last_spend: m=>fmtMoney(m.last_spend),
+    last_net_roi: m=>fmtRoi(m.last_net_roi),
+    last_roi: m=>fmtRoi(m.last_roi),
+    spend_delta: m=>fmtDelta(m.spend_delta),
+    active_weeks: m=>m.active_weeks,
+  };
+  cols.forEach(k=>{ if(F[k]) fields.push(`<div class="mat-field"><span class="f-label">${MAT_FIELD_MAP[k].label}</span><span class="f-val">${F[k](m)}</span></div>`); });
+  const sparkHtml = cols.includes('spark') ? sparkSvg(m.series) : '';
+  return `<button class="mat-item" data-key="${esc(m.key)}" title="点击查看素材详情">
+    <div class="mat-top">
+      <span class="mat-item-name" title="${esc(m.name)}">${esc(m.name)}</span>
+      <span class="mat-badges">${badges.join('')}</span>
+    </div>
+    <div class="mat-meta"><span style="color:${LINE_COLORS[lineOf(m)]||'#8d9a92'}">●</span> ${esc(lineOf(m))}${m.author? ' · 作者 '+esc(m.author):''}${m.channel? ' · '+esc(m.channel):''}${m.mix_author? ' · 混剪 '+esc(m.mix_author):''} · ID ${esc(m.mid)}${m.active_weeks? ' · 在投'+m.active_weeks+'周':''}</div>
+    <div class="mat-fields">${fields.join('')}${sparkHtml}</div>
+  </button>`;
+}
+
+function computeMats(){
+  const q = matState.q;
+  matState.filtered = currentMats().filter(m =>
+    (!matState.phase || m.phase===matState.phase) &&
+    (!matState.line || lineOf(m)===matState.line) &&
+    (!matState.authors.length || matState.authors.includes(m.author)) &&
+    (!matState.channel || m.channel===matState.channel) &&
+    (!q || (m.name||'').toLowerCase().includes(q) || (m.mid||'').toLowerCase().includes(q))
+  );
+  const key = matState.sort==='roi'? 'total_roi' : matState.sort==='netroi'? 'total_net_roi' : matState.sort==='lastspend'? 'last_spend' : 'total_spend';
+  matState.filtered.sort((a,b)=>(b[key]||0)-(a[key]||0));
+  matState.page = 0;
+  renderMatPage();
+}
+function renderMatPage(){
+  const total = matState.filtered.length;
+  const pages = Math.max(1, Math.ceil(total / matState.pageSize));
+  if (matState.page >= pages) matState.page = pages - 1;
+  const start = matState.page * matState.pageSize;
+  const slice = matState.filtered.slice(start, start + matState.pageSize);
+  document.getElementById('matCount').textContent = `共 ${total} 个素材 · 第 ${start+1}–${start+slice.length} 个`;
+  document.getElementById('matList').innerHTML = slice.length
+    ? slice.map(renderMatItem).join('')
+    : '<div class="empty">无匹配素材，试试调整搜索或筛选</div>';
+  document.getElementById('pgInfo').textContent = `第 ${matState.page+1} / ${pages} 页`;
+  document.getElementById('pgPrev').disabled = matState.page <= 0;
+  document.getElementById('pgNext').disabled = matState.page >= pages - 1;
+}
+document.getElementById('matList').addEventListener('click', e=>{
+  const btn = e.target.closest('.mat-item');
+  if (btn) showMatDetail(btn.dataset.key);
+});
+document.getElementById('pgPrev').onclick = ()=>{ if(matState.page>0){ matState.page--; renderMatPage(); } };
+document.getElementById('pgNext').onclick = ()=>{ matState.page++; renderMatPage(); };
+let searchTimer = null;
+document.getElementById('search').addEventListener('input', e=>{
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(()=>{ matState.q = e.target.value.trim().toLowerCase(); computeMats(); }, 250);
+});
+document.getElementById('phaseFilter').onchange = e=>{ matState.phase = e.target.value; computeMats(); };
+document.getElementById('lineFilter').onchange = e=>{ matState.line = e.target.value; computeMats(); };
+document.getElementById('channelFilter').onchange = e=>{ matState.channel = e.target.value; computeMats(); };
+document.getElementById('sortSel').onchange = e=>{ matState.sort = e.target.value; computeMats(); };
+
+/* ===== 作者二级侧拉菜单（全职/其他 → 右侧多选具体作者） ===== */
+let activeAuthGroup = 'fulltime';
+const authBtn = document.getElementById('authBtn');
+const authPanel = document.getElementById('authPanel');
+const authItemsEl = document.getElementById('authItems');
+function authOtherList(){
+  const set = new Set();
+  (RV||D).materials.forEach(m=>{ const a=m.author; if(a && !FULLTIME_AUTHORS.includes(a)) set.add(a); });
+  return [...set].sort();
+}
+function renderAuthItems(){
+  const list = activeAuthGroup==='fulltime' ? FULLTIME_AUTHORS : authOtherList();
+  authItemsEl.innerHTML = list.map(a=>{
+    const checked = matState.authors.includes(a) ? ' checked' : '';
+    return `<label class="auth-item"><input type="checkbox" value="${a}"${checked}><span class="a-name">${a}</span></label>`;
+  }).join('') || '<div class="empty" style="padding:24px 8px">该分组暂无作者</div>';
+}
+function syncAuthMenu(){
+  const n = matState.authors.length;
+  authBtn.textContent = n ? `作者：${matState.authors.join('、')}` : '作者：全部';
+  authBtn.title = n ? `已选 ${n} 位作者，点击调整` : '作者筛选（可多选）';
+  authBtn.classList.toggle('open', authPanel.classList.contains('open'));
+  document.querySelectorAll('.auth-group').forEach(g=>{
+    const t = g.dataset.type;
+    const pool = t==='fulltime' ? FULLTIME_AUTHORS : authOtherList();
+    const cnt = matState.authors.filter(a=>pool.includes(a)).length;
+    g.querySelector('.ag-name').textContent = (t==='fulltime'?'全职作者':'其他作者') + (cnt ? `（${cnt}）` : '');
+    g.classList.toggle('active', t===activeAuthGroup);
+  });
+}
+authBtn.onclick = e => {
+  e.stopPropagation();
+  authPanel.classList.toggle('open');
+  if (authPanel.classList.contains('open')) renderAuthItems();
+  syncAuthMenu();
+};
+document.querySelectorAll('.auth-group').forEach(g=>{
+  g.onclick = ()=>{
+    activeAuthGroup = g.dataset.type;
+    renderAuthItems();
+    syncAuthMenu();
+  };
+});
+authItemsEl.addEventListener('change', e=>{
+  if (e.target.type !== 'checkbox') return;
+  const v = e.target.value;
+  const i = matState.authors.indexOf(v);
+  if (e.target.checked && i===-1) matState.authors.push(v);
+  if (!e.target.checked && i!==-1) matState.authors.splice(i,1);
+  syncAuthMenu();
+  computeMats();
+});
+document.addEventListener('click', e=>{
+  if (!e.target.closest('.auth-menu')) { authPanel.classList.remove('open'); syncAuthMenu(); }
+});
+renderAuthItems();
+syncAuthMenu();
+
+/* ---- 素材详情：投放趋势（按天/按周/按月）+ 自定义图例 ---- */
+let currentDetailMat = null;
+const MAT_TREND_DEFS = [
+  {name:'消耗', color:'#1e5b4c'},
+  {name:'整体成交金额', color:'#4f9d86'},
+  {name:'净成交金额', color:'#c9a13a'},
+  {name:'ROI', color:'#123d33'},
+];
+let matTrendHidden = {};
+const matWkLbl = s => s.week_end ? `${s.week.slice(5)}~${s.week_end.slice(5)}` : weekLabel(s.week);
+function buildMatTrendLegend(){
+  const box = document.getElementById('matTrendLegend');
+  if (!box) return;
+  box.innerHTML = MAT_TREND_DEFS.map(d=>`<span class="tl-item${matTrendHidden[d.name]?' off':''}" data-name="${d.name}"><span class="tl-dot" style="background:${d.color}"></span>${d.name}</span>`).join('');
+  box.querySelectorAll('.tl-item').forEach(el=>{
+    el.onclick = ()=>{
+      const nm = el.dataset.name;
+      matTrendHidden[nm] = !matTrendHidden[nm];
+      buildMatTrendLegend();
+      renderMatTrendChart();
+    };
+  });
+}
+function renderMatTrendChart(){
+  const m = currentDetailMat;
+  if (!m) return;
+  const gran = document.getElementById('matTrendGran').value;
+  const cats = [], spend = [], pay = [], net = [], roi = [];
+  if (gran === 'week'){
+    m.series.forEach(s=>{
+      cats.push(matWkLbl(s)); spend.push(s.spend); pay.push(s.pay); net.push(s.net_pay); roi.push(s.roi);
+    });
+  } else if (gran === 'day'){
+    (m.days||[]).forEach(d=>{
+      if (d[0] < RANGE.start || d[0] > RANGE.end) return;
+      cats.push(d[0].slice(5)); spend.push(d[1]||0); pay.push(d[2]||0); net.push(d[3]||0);
+      roi.push((d[1]||0) ? ((d[2]||0)/d[1]) : null);
+    });
+  } else {  // month
+    const mm = new Map();
+    (m.days||[]).forEach(d=>{
+      if (d[0] < RANGE.start || d[0] > RANGE.end) return;
+      const k = d[0].slice(0,7);
+      const a = mm.get(k) || [0,0,0];
+      a[0]+=d[1]||0; a[1]+=d[2]||0; a[2]+=d[3]||0;
+      mm.set(k, a);
+    });
+    [...mm.entries()].sort((x,y)=>x[0]<y[0]?-1:1).forEach(([k,a])=>{
+      cats.push(k); spend.push(a[0]); pay.push(a[1]); net.push(a[2]);
+      roi.push(a[0] ? (a[1]/a[0]) : null);
+    });
+  }
+  const series = MAT_TREND_DEFS.map(d=>{
+    const data = d.name==='消耗' ? spend : d.name==='整体成交金额' ? pay : d.name==='净成交金额' ? net : roi;
+    if (d.name==='ROI'){
+      return {name:'ROI',type:'line',yAxisIndex:1,data:matTrendHidden['ROI']?[]:data,smooth:true,symbolSize:6,lineStyle:{color:'#123d33',width:2.5},itemStyle:{color:'#123d33'}};
+    }
+    return {name:d.name,type:'bar',barMaxWidth:16,data:matTrendHidden[d.name]?[]:data,itemStyle:{color:d.color,borderRadius:[3,3,0,0]}};
+  });
+  /* 时间条：按粒度默认聚焦最近一段（周6 / 天14 / 月6），数据不足时显示全部 */
+  const DZ_DEFAULT = { day:14, week:6, month:6 };
+  const n = cats.length;
+  const keep = DZ_DEFAULT[gran] || 6;
+  let dzStart = 0, dzEnd = 1;
+  if (n > keep) { dzStart = (n - keep) / n; dzEnd = 1; }
+  mkChart('ch_mat', {
+    tooltip:{trigger:'axis', extraCssText:'box-shadow:var(--shadow-md);border:1px solid var(--line);border-radius:8px;', formatter: ps => {
+      if (!ps || !ps.length) return '';
+      const rows = ps.map(p=>{
+        let v = p.value==null ? '—' : (p.seriesName==='ROI' ? Number(p.value).toFixed(2) : fmtMoney(p.value));
+        return `<div style="display:flex;justify-content:space-between;gap:20px;line-height:1.7;align-items:center"><span style="white-space:nowrap">${p.marker}${p.seriesName}</span><b style="font-weight:600;font-variant-numeric:tabular-nums">${v}</b></div>`;
+      });
+      return `<div style="margin-bottom:2px">${ps[0].name}</div>${rows.join('')}`;
+    }},
+    grid:{left:64,right:56,top:30,bottom:62},
+    xAxis:{type:'category',data:cats,...AXIS},
+    yAxis:[{type:'value',name:'元',...GRID_LINE},{type:'value',name:'ROI',splitLine:{show:false}}],
+    animation:false,
+    dataZoom:[{
+      type:'slider', xAxisIndex:0,
+      height:20, bottom:4,
+      start:dzStart*100, end:dzEnd*100,
+      filterMode:'filter',
+      backgroundColor:'#f2f7f4',
+      fillerColor:'rgba(30,91,76,.18)',
+      borderColor:'#d5e0da',
+      handleStyle:{color:'#1e5b4c', cursor:'ew-resize'},
+      moveHandleStyle:{color:'#8aa99b'},
+      textStyle:{color:'#56665d', fontSize:11},
+      dataBackground:{lineStyle:{color:'#bcd5c9'}, areaStyle:{color:'rgba(30,91,76,.06)'}},
+      brushSelect:false,
+    }],
+    series,
+  });
+}
+function showMatDetail(key){
+  const m = currentMats().find(x=>x.key===key);
+  if(!m) return;
+  currentDetailMat = m;
+  const line = lineOf(m);
+  const rg = `${RANGE.start} ~ ${RANGE.end}`;
+  document.getElementById('detailEmpty').style.display = 'none';
+  document.getElementById('detailBody').style.display = 'block';
+  document.getElementById('detailName').innerHTML =
+    `${esc(m.name)} ${m.is_aggregate?'<span class="tag agg">聚合</span>':''}`;
+  document.getElementById('detailMeta').innerHTML =
+    `<span class="dm" style="color:${LINE_COLORS[line]||'#8d9a92'}">● ${esc(line)}</span>` +
+    `<span class="dm">作者 ${esc(m.author)||'—'}</span>` +
+    `<span class="dm">渠道 ${esc(m.channel)||'—'}</span>` +
+    (m.material_no?`<span class="dm">编号 ${esc(m.material_no)}</span>`:'') +
+    (m.created_date?`<span class="dm">创作 ${esc(m.created_date)}</span>`:'') +
+    (m.mix_author?`<span class="dm">混剪达人 ${esc(m.mix_author)}</span>`:'') +
+    `<span class="dm">ID ${esc(m.mid)}</span>` +
+    (m.duration?`<span class="dm">时长 ${esc(m.duration)}</span>`:'') +
+    `<span class="dm">区间 ${esc(rg)}</span>` +
+    `<span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span>` +
+    (m.flags||[]).map(f=>`<span class="tag flag">${f}</span>`).join('');
+  const dk = (label,val,sub)=>`<div class="dk"><div class="dk-label">${label}</div><div class="dk-val">${val}${sub?`<small> ${sub}</small>`:''}</div></div>`;
+  document.getElementById('detailKpis').innerHTML =
+    dk('区间消耗', fmtMoney(m.total_spend), '元') +
+    dk('区间成交金额', fmtMoney(m.total_pay), '元') +
+    dk('区间整体ROI', fmtRoi(m.total_roi)) +
+    dk('区间净成交', fmtMoney(m.total_net_pay), '元') +
+    dk('区间净成交ROI', fmtRoi(m.total_net_roi)) +
+    dk('区间订单', Number(m.total_order_count||0).toLocaleString('zh-CN'), '单') +
+    dk('区间退款率', fmtPct(m.last_refund_rate_1h)) +
+    dk('区间结算率', fmtPct(m.last_settle_rate)) +
+    dk('末周消耗', fmtMoney(m.last_spend), '元') +
+    dk('末周成交金额', fmtMoney(m.last_pay), '元') +
+    dk('末周ROI', fmtRoi(m.last_roi), m.roi_delta!=null ? fmtDelta(m.roi_delta) : '');
+  document.getElementById('detailInfo').innerHTML =
+    `<span class="di">创建 <b>${esc(m.created_at)||'—'}</b></span>` +
+    `<span class="di">区间首现 <b>${esc(m._agg.first)||'—'}</b></span>` +
+    `<span class="di">区间末日 <b>${esc(m._agg.last)||'—'}</b></span>` +
+    `<span class="di">区间 <b>${m._agg.days||0}</b> 天 / ${m.active_weeks||0} 周</span>` +
+    `<span class="di">最新评估 <b>${esc(m.evaluation)||'—'}</b></span>`;
+  renderMatTrendChart();
+  /* 周明细表：周期按「起始日 ~ 结束日」完整标注 */
+  const wtHead = document.querySelector('#weekTable thead');
+  const wtBody = document.querySelector('#weekTable tbody');
+  wtHead.innerHTML = '<tr><th class="l">周期</th><th>消耗</th><th>整体成交金额</th><th>净成交金额</th><th>整体ROI</th><th>净成交ROI</th><th>订单数</th><th>退款率</th><th>结算率</th><th>消耗环比</th></tr>';
+  wtBody.innerHTML = m.series.length
+    ? m.series.map((s,i)=>{
+        const prev = i>0 ? (m.series[i-1].spend||0) : null;
+        const dlt = (prev!=null && prev>0) ? fmtDelta((s.spend||0)/prev - 1) : '<span class="muted">—</span>';
+        const lbl = s.week_end ? `${s.week} ~ ${s.week_end}` : weekLabel(s.week,true);
+        return `<tr><td class="l">${lbl}</td><td>${fmtMoney(s.spend)}</td><td>${fmtMoney(s.pay)}</td><td>${fmtMoney(s.net_pay)}</td><td>${s.roi!=null?fmtRoi(s.roi):'<span class="muted">—</span>'}</td><td>${s.net_roi!=null?fmtRoi(s.net_roi):'<span class="muted">—</span>'}</td><td>${Number(s.order_count||0).toLocaleString('zh-CN')}</td><td>${fmtPct(s.refund_rate_1h)}</td><td>${fmtPct(s.settle_rate)}</td><td>${dlt}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="10" class="empty">该区间暂无周度数据</td></tr>';
+  document.querySelectorAll('#matList .mat-item').forEach(b=>b.classList.toggle('sel', b.dataset.key===key));
+  const pane = document.getElementById('detailPane');
+  if (window.matchMedia('(max-width: 760px)').matches) { pane.classList.add('open'); }
+  else { pane.scrollIntoView({behavior:'smooth', block:'nearest'}); }
+}
+buildMatTrendLegend();
+document.getElementById('matTrendGran').addEventListener('change', ()=>{ if (currentDetailMat) renderMatTrendChart(); });
+document.getElementById('detailClose').onclick = ()=>{
+  const pane = document.getElementById('detailPane');
+  pane.classList.remove('open');
+  if (window.matchMedia('(min-width: 761px)').matches) {
+    document.getElementById('detailEmpty').style.display = 'block';
+    document.getElementById('detailBody').style.display = 'none';
+  }
+};
+
+/* ============ 新增素材（单列表 + 口径切换） ============ */
+const NEW_FIELDS = [
+  {key:'name', label:'素材名称', align:'l'},
+  {key:'created_at', label:'创建时间'},
+  {key:'mid', label:'素材ID'},
+  {key:'first_spend', label:'首周消耗'},
+  {key:'first_roi', label:'首周ROI'},
+  {key:'keep', label:'次周继续'},
+  {key:'next_spend', label:'次周消耗'},
+  {key:'next_roi', label:'次周ROI'},
+];
+const NEW_FIELD_MAP = Object.fromEntries(NEW_FIELDS.map(f=>[f.key,f]));
+const NEW_RENDERERS = {
+  name: i=>`<button class="mat-name-link" data-key="${esc(i.key)}" title="${esc(i.name)}">${esc(i.name)}</button>`,
+  created_at: i=>esc(i.created_at)||'—',
+  mid: i=>esc(i.mid),
+  first_spend: i=>fmtMoney(i.first_spend),
+  first_roi: i=>fmtRoi(i.first_roi),
+  keep: i=>i.keep==null? '<span class="muted">待观察</span>' : (i.keep? '<span class="tag new">继续投放</span>' : '<span class="tag stop">已停投</span>'),
+  next_spend: i=>fmtMoney(i.next_spend),
+  next_roi: i=>fmtRoi(i.next_roi),
+};
+let newMgr = null, newTabInit = false;
+const newStore = { items:null, cols:null, offset:0 };
+const NEW_STEP = 50;
+function renderNewTab(){
+  const sel = document.getElementById('newWeek');
+  if (!newTabInit) {
+    sel.addEventListener('change', renderNewSelected);
+    newMgr = new ColMgr('newTable', NEW_FIELDS, 'new', ()=>renderNewSelected());
+    newMgr.attach('newColBtn', 'newColPanel');
+    newTabInit = true;
+  }
+  // 周下拉跟随当前圈选区间
+  const weeks = (RV||D).weeks;
+  const ends = (RV||D).week_ends || D.week_ends;
+  sel.innerHTML = '';
+  weeks.forEach((w,i)=>{
+    const end = (ends && ends[i]) || w;
+    sel.add(new Option(`第${i+1}周（${w} ~ ${end}）`, w));
+  });
+  if (weeks.length) sel.value = weeks[weeks.length-1];
+  renderNewSelected();
+  renderPartSection();
+}
+function renderNewSelected(){
+  const w = document.getElementById('newWeek').value;
+  const mode = document.getElementById('newMode').value;
+  const i = D.weeks.indexOf(w);
+  const block = mode==='created' ? D.new_created[i] : D.new_firstseen[i];
+  const items = block ? block.items.slice() : [];
+  items.sort((a,b)=>(b.first_spend||0)-(a.first_spend||0));
+  const cols = newMgr.visible();
+  document.querySelector('#newTable thead').innerHTML =
+    '<tr>' + cols.map(k=>`<th class="${NEW_FIELD_MAP[k].align==='l'?'l':''}">${NEW_FIELD_MAP[k].label}</th>`).join('') + '</tr>';
+  attachNameResizer('newTable');
+  const tbody = document.querySelector('#newTable tbody');
+  const more = document.getElementById('newMore');
+  let keep = 0; items.forEach(i=>{ if (i.keep) keep++; });
+  document.getElementById('newHint').textContent =
+    mode==='created' ? '按素材创建时间落在该周（真实上新节奏）' : '按首次出现在该周的周报中（数据捕捉）';
+  if (!cols.length){
+    tbody.innerHTML = '<tr><td class="empty">已隐藏全部字段，请在「字段设置」中勾选</td></tr>';
+    more.style.display = 'none';
+  } else if (!items.length){
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" class="empty">该周无新增素材</td></tr>`;
+    more.style.display = 'none';
+  } else {
+    newStore.items = items; newStore.cols = cols; newStore.offset = 0;
+    tbody.innerHTML = '';
+    renderNewRows(tbody, more);
+  }
+  const end = weekEndOf(w) || w;
+  document.getElementById('newSummary').textContent =
+    `所选周期 ${w} ~ ${end} · 新增素材 ${items.length} 个${keep? ` · 次周继续投放 ${keep} 个`:''}`;
+}
+function renderNewRows(tbody, more){
+  const st = newStore;
+  const slice = st.items.slice(st.offset, st.offset + NEW_STEP);
+  st.offset += slice.length;
+  tbody.insertAdjacentHTML('beforeend', slice.map(i=>'<tr title="点击查看素材详情">' + st.cols.map(k=>`<td class="${NEW_FIELD_MAP[k].align==='l'?'l':''}">${NEW_RENDERERS[k](i)}</td>`).join('') + '</tr>').join(''));
+  if (st.offset >= st.items.length){
+    more.textContent = `已全部加载（共 ${st.items.length} 个）`;
+    more.style.display = 'none';
+  } else {
+    more.textContent = `加载更多（已显示 ${st.offset} / ${st.items.length}）`;
+    more.style.display = 'block';
+    more.onclick = ()=>renderNewRows(tbody, more);
+  }
+}
+document.getElementById('newMode').addEventListener('change', renderNewSelected);
+/* 新增素材：点击名称跳转素材库详情 */
+function jumpToMaterial(key){
+  if (!key) return;
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(key), 60);
+}
+document.getElementById('newTable').addEventListener('click', e=>{
+  const b = e.target.closest('.mat-name-link');
+  if (b) jumpToMaterial(b.dataset.key);
+});
+
+/* ============ 素材名称列拖拽调宽（新增素材 / 消耗区间列表通用） ============ */
+function attachNameResizer(tableId){
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const ths = table.querySelectorAll('thead th');
+  ths.forEach(th=>{
+    const rz = th.querySelector(':scope > .col-resizer');
+    if (rz) rz.remove();
+    if ((th.textContent||'').trim() === '素材名称'){
+      const s = document.createElement('span');
+      s.className = 'col-resizer';
+      s.title = '拖动调节列宽';
+      th.appendChild(s);
+    }
+  });
+}
+let colResize = null;
+document.addEventListener('mousedown', e=>{
+  const rz = e.target.closest('.col-resizer');
+  if (!rz) return;
+  e.preventDefault();
+  const th = rz.closest('th');
+  const table = th.closest('table');
+  rz.classList.add('dragging');
+  colResize = { table, idx: th.cellIndex, startX: e.clientX, startW: th.getBoundingClientRect().width };
+});
+document.addEventListener('mousemove', e=>{
+  if (!colResize) return;
+  const w = Math.max(70, colResize.startW + (e.clientX - colResize.startX));
+  colResize.table.querySelectorAll('tr > :nth-child(' + (colResize.idx+1) + ')').forEach(c=>{
+    c.style.width = w + 'px';
+    c.style.minWidth = w + 'px';
+    c.style.maxWidth = w + 'px';
+    /* 名称列内部按钮/名称跟随列宽，让省略号随宽度实时折叠/展开 */
+    const link = c.querySelector('.mat-name-link, .m-name');
+    if (link){
+      link.style.maxWidth = Math.max(30, w - 16) + 'px';
+      link.style.width = (w - 16) + 'px';
+    }
+  });
+});
+document.addEventListener('mouseup', ()=>{
+  if (colResize){
+    document.querySelectorAll('.col-resizer.dragging').forEach(r=>r.classList.remove('dragging'));
+    colResize = null;
+  }
+});
+
+/* ============ 消耗区间分析（独立日期选择，仅关联本部分） ============ */
+const PART_BUCKET_DEFS = [
+  {key:'r0', label:'消耗为0',        desc:'x = 0',            color:'#b6bdb7'},
+  {key:'r1', label:'消耗为0~100',    desc:'0 < x ≤ 100',      color:'#d98a2b'},
+  {key:'r2', label:'消耗为100~1000', desc:'100 < x ≤ 1000',   color:'#4c7faf'},
+  {key:'r3', label:'消耗≥1000',      desc:'x > 1000',         color:'#1e5b4c'},
+];
+const partState = { start:'', end:'', bucket:null };
+let partInit = false;
+let partBucketsItems = {};
+let partTotal = 0;
+const partListStore = { items:null, offset:0 };
+const PART_LIST_STEP = 50;
+const fmtDateSlash = d => String(d||'').replace(/-/g, '/');
+function partRangeText(){
+  return `${fmtDateSlash(partState.start)} - ${fmtDateSlash(partState.end)}`;
+}
+function partSelect(start, end){
+  partState.start = start; partState.end = end;
+  document.getElementById('partRangeText').textContent = partRangeText();
+  renderPartBuckets();
+  renderPartList();
+}
+function partSectionVisible(){
+  const sec = document.querySelector('.part-section');
+  const page = document.getElementById('tab-new');
+  return sec && page && page.classList.contains('active');
+}
+function renderPartSection(){
+  if (!partInit){
+    partInit = true;
+    partState.start = RANGE.start || DAY_MIN;
+    partState.end = RANGE.end || DAY_MAX;
+    document.getElementById('partRangeText').textContent = partRangeText();
+  }
+  renderPartBuckets();
+  renderPartList();
+}
+/* 创建日往后推 30 天（固定 30 天观察期，不采用自然月逻辑） */
+function addObserveDays(d){
+  const dt = new Date(d + 'T00:00:00');
+  dt.setDate(dt.getDate() + 30);
+  const Y = dt.getFullYear(), M = String(dt.getMonth()+1).padStart(2,'0'), D = String(dt.getDate()).padStart(2,'0');
+  return `${Y}-${M}-${D}`;
+}
+function buildPartData(){
+  const start = partState.start, end = partState.end;
+  const buckets = PART_BUCKET_DEFS.map(b=>({...b, items:[], count:0}));
+  const bmap = Object.fromEntries(buckets.map(b=>[b.key,b]));
+  let total = 0;
+  D.materials.forEach(m=>{
+    if (m.is_aggregate) return;
+    // 素材池：创建日期落在所选区间内的素材
+    const cdate = (m.created_at||'').slice(0,10);
+    if (!cdate || cdate < start || cdate > end) return;
+    total++;
+    // 观察期：创建日 ～ 创建日往后 30 天，统计该观察期内的消耗指标
+    const obsEnd = addObserveDays(cdate);
+    const g = aggRange(m, cdate, obsEnd);
+    const sp = g.spend || 0;
+    const bk = sp===0 ? 'r0' : sp<=100 ? 'r1' : sp<=1000 ? 'r2' : 'r3';
+    bmap[bk].items.push(Object.assign({}, m, {
+      total_spend: round2(sp), total_pay: round2(g.pay), total_net_pay: round2(g.net),
+      total_order_count: round2(g.order), total_roi: g.roi, total_net_roi: g.net_roi,
+      /* 保留素材累计总消耗（全量口径），用于与观察期消耗对比展示 */
+      orig_total_spend: round2(m.total_spend),
+    }));
+  });
+  buckets.forEach(b=>b.count=b.items.length);
+  return { buckets, total };
+}
+function renderPartBuckets(){
+  const { buckets, total } = buildPartData();
+  partTotal = total;
+  partBucketsItems = Object.fromEntries(buckets.map(b=>[b.key,b.items]));
+  const box = document.getElementById('partBuckets');
+  box.innerHTML = buckets.map(b=>{
+    const ratio = total ? (b.count/total*100) : 0;
+    const act = partState.bucket===b.key ? ' act' : '';
+    return `<div class="part-bucket${act}" data-bk="${b.key}">
+      <div class="pb-head"><span class="pb-dot" style="background:${b.color}"></span><span class="pb-title">${b.label}</span></div>
+      <div class="pb-range">${b.desc}</div>
+      <div class="pb-metrics">
+        <div class="pb-m"><span class="pb-m-label">素材数：</span><span class="pb-m-num">${b.count.toLocaleString('zh-CN')}</span><span class="pb-m-unit"> 个</span></div>
+        <div class="pb-m"><span class="pb-m-label">占比：</span><span class="pb-m-num">${ratio.toFixed(2)}</span><span class="pb-m-unit">%</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.part-bucket').forEach(el=>{
+    el.onclick = ()=>selectPartBucket(el.dataset.bk);
+  });
+}
+function selectPartBucket(bk){
+  partState.bucket = bk;
+  const { buckets } = buildPartData();
+  partBucketsItems = Object.fromEntries(buckets.map(b=>[b.key,b.items]));
+  renderPartBuckets();
+  renderPartList();
+}
+const partListSortVal = ()=> (document.getElementById('partListSort')||{value:'spend'}).value;
+function renderPartList(){
+  const hint = document.getElementById('partListHint');
+  const tbody = document.querySelector('#partListTable tbody');
+  const more = document.getElementById('partListMore');
+  if (!partState.bucket){
+    hint.textContent = '点击上方消耗区间卡片查看该区间素材';
+    document.querySelector('#partListTable thead').innerHTML = '';
+    tbody.innerHTML = '';
+    more.style.display = 'none';
+    return;
+  }
+  const meta = PART_BUCKET_DEFS.find(x=>x.key===partState.bucket);
+  hint.textContent = `${meta.label} · 创建日 ${partRangeText()} · 观察期总消耗=创建日~+30天累计 · 点击素材行查看详情`;
+  const k = partListSortVal();
+  const key = k==='roi'?'total_roi' : k==='net'?'total_net_pay' : k==='order'?'total_order_count' : k==='pay'?'total_pay' : 'total_spend';
+  const items = (partBucketsItems[partState.bucket]||[]).slice().sort((a,b)=>(b[key]||0)-(a[key]||0));
+  document.querySelector('#partListTable thead').innerHTML =
+    '<tr><th class="l">素材名称</th><th>评估状态</th><th>AI标识</th><th>渠道</th><th>产品</th><th>作者</th><th>累计消耗</th><th>观察期总消耗</th><th>成交金额</th><th>净成交</th><th>整体ROI</th><th>订单</th><th>阶段</th></tr>';
+  attachNameResizer('partListTable');
+  if (!items.length){
+    tbody.innerHTML = '<tr><td colspan="13" class="empty">该区间暂无素材</td></tr>';
+    more.style.display = 'none';
+    return;
+  }
+  partListStore.items = items; partListStore.offset = 0;
+  tbody.innerHTML = '';
+  renderPartListRows(tbody, more);
+}
+function renderPartListRows(tbody, more){
+  const st = partListStore;
+  const slice = st.items.slice(st.offset, st.offset + PART_LIST_STEP);
+  st.offset += slice.length;
+  tbody.insertAdjacentHTML('beforeend', slice.map(m=>`<tr data-key="${esc(m.key)}" title="点击查看素材详情">
+    <td class="l"><span class="m-name" title="${esc(m.name)}">${esc(m.name)}</span></td>
+    <td>${m.evaluation?`<span class="tag ev">${esc(m.evaluation)}</span>`:'<span class="muted">—</span>'}</td>
+    <td>${m.ai_tag?`<span class="tag ai">${esc(m.ai_tag)}</span>`:'—'}</td>
+    <td>${esc(m.channel)||'—'}</td>
+    <td>${esc(m.product)||'—'}</td>
+    <td>${esc(m.author)||'—'}</td>
+    <td>${fmtMoney(m.orig_total_spend)}</td>
+    <td>${fmtMoney(m.total_spend)}</td>
+    <td>${fmtMoney(m.total_pay)}</td>
+    <td>${fmtMoney(m.total_net_pay)}</td>
+    <td>${fmtRoi(m.total_roi)}</td>
+    <td>${Number(m.total_order_count||0).toLocaleString('zh-CN')}</td>
+    <td><span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span></td>
+  </tr>`).join(''));
+  if (st.offset >= st.items.length){
+    more.textContent = `已全部加载（共 ${st.items.length} 个）`;
+    more.style.display = 'none';
+  } else {
+    more.textContent = `加载更多（已显示 ${st.offset} / ${st.items.length}）`;
+    more.style.display = 'block';
+    more.onclick = ()=>renderPartListRows(tbody, more);
+  }
+}
+document.getElementById('partListSort').addEventListener('change', ()=>{ if (partState.bucket) renderPartList(); });
+document.getElementById('partListTable').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-key]');
+  if (!tr) return;
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(tr.dataset.key), 60);
+});
+
+/* ---- 通用日期选择器：自然周 / 自然月 / 自定义（全局圈选与消耗区间分析复用） ---- */
+const PART_WEEK_HEADS = ['一','二','三','四','五','六','日'];
+let pickerMode = null;           // 'week' | 'month' | 'custom'
+let pickerView = { y:0, m:0 };
+let pickerPickStart = null;      // 自定义模式首次点击的开始日期
+let pickerOnDone = null;         // 选择完成回调 onDone(start, end)
+let pickerSel = null;            // () => ({start,end}) 用于高亮当前选中
+function openDatePicker(mode, onDone, selGetter, base, btn){
+  pickerMode = mode;
+  pickerOnDone = onDone || null;
+  pickerSel = selGetter || null;
+  const b = base || DAY_MAX;
+  const [y, m] = (b || DAY_MIN).split('-').map(Number);
+  pickerView = { y, m };
+  pickerPickStart = null;
+  document.getElementById('prOverlay').classList.add('open');
+  const pop = document.getElementById('prPop');
+  pop.style.display = 'block';
+  /* 弹层定位到触发按钮下方（fixed，跟随视口，避免落在视口角落/外） */
+  if (btn){
+    const r = btn.getBoundingClientRect();
+    const pw = pop.offsetWidth || 300;
+    let left = r.left;
+    if (left + pw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - pw - 8);
+    let top = r.bottom + 6;
+    const ph = pop.offsetHeight || 320;
+    if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+  }
+  renderDatePicker();
+}
+function closeDatePicker(){
+  document.getElementById('prOverlay').classList.remove('open');
+  document.getElementById('prPop').style.display = 'none';
+  pickerMode = null;
+  pickerHoverDate = null;
+}
+function renderDatePicker(){
+  const pop = document.getElementById('prPop');
+  if (pickerMode === 'month') renderDatePickerMonth(pop);
+  else renderDatePickerCal(pop);
+}
+function pickerCur(){
+  return pickerSel ? pickerSel() : null;
+}
+/* 日期是否有数据（全局数据范围 DAY_MIN ~ DAY_MAX 内视为有效） */
+function pickerHasData(date){
+  return date >= DAY_MIN && date <= DAY_MAX;
+}
+/* 自然周 / 自定义：月视图日历
+   完整渲染 7 列网格：含上月尾部与次月开头的跨月日期（out 样式：灰字白底）；
+   无数据日期置灰不可选；hover 预览本次将选中的整个范围 */
+function renderDatePickerCal(pop){
+  const { y, m } = pickerView;
+  const firstDow = (new Date(y, m-1, 1).getDay() + 6) % 7;   // 当月1号周一=0
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const prevDays = new Date(y, m-1, 0).getDate();            // 上月天数
+  const prevY = m===1 ? y-1 : y, prevM = m===1 ? 12 : m-1;
+  const nextY = m===12 ? y+1 : y, nextM = m===12 ? 1 : m+1;
+  const pad = n => String(n).padStart(2,'0');
+  const cells = [];   // {date, day, out}
+  for (let i=0;i<firstDow;i++) cells.push({ date: `${prevY}-${pad(prevM)}-${pad(prevDays-firstDow+1+i)}`, day: prevDays-firstDow+1+i, out: true });
+  for (let d=1; d<=daysInMonth; d++) cells.push({ date: `${y}-${pad(m)}-${pad(d)}`, day: d, out: false });
+  let nx = 1;
+  while (cells.length % 7 !== 0) cells.push({ date: `${nextY}-${pad(nextM)}-${pad(nx)}`, day: nx, out: true, nx: true }), nx++;
+  const cur = pickerCur();
+  /* 已选第一个日期后（custom 二次选择中）：仅高亮第一个日期，取消上次生效范围的 cur 高亮 */
+  const pickStart = pickerPickStart;
+  const isSel = d => {
+    if (pickStart) return d===pickStart;
+    if (!cur) return false;
+    if (pickerMode==='week') return cur.start===isoWeekStart(d);
+    return d===cur.start || d===cur.end;
+  };
+  /* disabled：无数据日期；custom 已选第一个日期后，其之前的所有日期不可选 */
+  const isDisabled = d => {
+    if (!pickerHasData(d)) return true;
+    if (pickerMode==='custom' && pickStart && d < pickStart) return true;
+    return false;
+  };
+  pop.innerHTML = `
+    <div class="pr-head">
+      <button class="pr-nav" data-nav="-1">‹</button>
+      <span>${y}年 ${m}月</span>
+      <button class="pr-nav" data-nav="1">›</button>
+    </div>
+    <div class="pr-grid pr-grid-head">${PART_WEEK_HEADS.map(h=>`<span>${h}</span>`).join('')}</div>
+    <div class="pr-grid">${cells.map(c=>{
+      const date = c.date;
+      const cls = (isSel(date) ? ' pr-cell sel'
+        : isDisabled(date) ? ' pr-cell disabled'
+        : ' pr-cell') + (c.out ? ' out' : '');
+      return `<span class="${cls}" data-date="${date}">${c.day}</span>`;
+    }).join('')}</div>`;
+}
+/* 自然月：仅月份月历（无数据月份置灰不可选） */
+function renderDatePickerMonth(pop){
+  const { y } = pickerView;
+  const cur = pickerCur();
+  pop.innerHTML = `
+    <div class="pr-head">
+      <button class="pr-nav" data-nav="-1">‹</button>
+      <span>${y}年</span>
+      <button class="pr-nav" data-nav="1">›</button>
+    </div>
+    <div class="pr-month-grid">${[1,2,3,4,5,6,7,8,9,10,11,12].map(i=>{
+      const mm = `${y}-${String(i).padStart(2,'0')}`;
+      const lastDay = new Date(Number(y), i, 0).getDate();
+      const hasData = `${mm}-01` <= DAY_MAX && `${mm}-${String(lastDay).padStart(2,'0')}` >= DAY_MIN;
+      const sel = cur && cur.start.slice(0,7)===mm && cur.end.slice(0,7)===mm;
+      const cls = sel ? ' pr-mcell sel' : hasData ? ' pr-mcell' : ' pr-mcell disabled';
+      return `<span class="${cls}" data-month="${mm}">${i}月</span>`;
+    }).join('')}</div>`;
+}
+document.getElementById('prPop').addEventListener('click', e=>{
+  const nav = e.target.closest('.pr-nav');
+  if (nav){
+    const dir = parseInt(nav.dataset.nav, 10);
+    if (pickerMode==='month'){
+      pickerView.y += dir;
+    } else {
+      pickerView.m += dir;
+      if (pickerView.m < 1){ pickerView.m = 12; pickerView.y--; }
+      if (pickerView.m > 12){ pickerView.m = 1; pickerView.y++; }
+    }
+    renderDatePicker();
+    return;
+  }
+  const mcell = e.target.closest('.pr-mcell');
+  if (mcell && mcell.dataset.month){
+    if (mcell.classList.contains('disabled')) return;
+    const mm = mcell.dataset.month;
+    const lastDay = new Date(Number(mm.slice(0,4)), Number(mm.slice(5,7)), 0).getDate();
+    if (pickerOnDone) pickerOnDone(mm+'-01', `${mm}-${String(lastDay).padStart(2,'0')}`);
+    closeDatePicker();
+    return;
+  }
+  const cell = e.target.closest('.pr-cell');
+  if (!cell || !cell.dataset.date || cell.classList.contains('disabled')) return;
+  const date = cell.dataset.date;
+  if (pickerMode==='week'){
+    const ws = isoWeekStart(date);
+    if (pickerOnDone) pickerOnDone(ws, isoWeekEnd(ws));
+    closeDatePicker();
+  } else if (pickerMode==='custom'){
+    if (!pickerPickStart){
+      pickerPickStart = date;
+      renderDatePicker();
+    } else {
+      let s = pickerPickStart, e = date;
+      if (e < s){ const t = s; s = e; e = t; }
+      pickerPickStart = null;
+      if (pickerOnDone) pickerOnDone(s, e);
+      closeDatePicker();
+    }
+  }
+});
+/* hover 预览：鼠标所在日期将选中的范围用浅色高亮（自然周=整周；自定义=开始~hover 区间） */
+let pickerHoverDate = null;
+function updatePickerHover(){
+  /* 注意：日历内有表头 pr-grid-head 与日期网格两个 .pr-grid，必须取日期网格 */
+  const grid = document.querySelector('#prPop .pr-grid:not(.pr-grid-head)');
+  if (!grid) return;
+  grid.querySelectorAll('.pr-cell.hover').forEach(c=>c.classList.remove('hover'));
+  if (!pickerHoverDate || !pickerMode) return;
+  const paint = c => { if (!c.classList.contains('sel') && !c.classList.contains('disabled')) c.classList.add('hover'); };
+  if (pickerMode==='week'){
+    const ws = isoWeekStart(pickerHoverDate), we = isoWeekEnd(ws);
+    grid.querySelectorAll('.pr-cell[data-date]').forEach(c=>{
+      if (c.dataset.date >= ws && c.dataset.date <= we) paint(c);
+    });
+  } else if (pickerMode==='custom'){
+    if (pickerPickStart){
+      let s = pickerPickStart, e = pickerHoverDate;
+      if (e < s){ const t = s; s = e; e = t; }
+      grid.querySelectorAll('.pr-cell[data-date]').forEach(c=>{
+        if (c.dataset.date >= s && c.dataset.date <= e) paint(c);
+      });
+    } else {
+      const cell = grid.querySelector(`.pr-cell[data-date="${pickerHoverDate}"]`);
+      if (cell) paint(cell);
+    }
+  }
+}
+document.getElementById('prPop').addEventListener('mouseover', e=>{
+  const cell = e.target.closest('.pr-cell');
+  if (cell && cell.dataset.date && !cell.classList.contains('disabled')){
+    pickerHoverDate = cell.dataset.date;
+    updatePickerHover();
+  }
+});
+document.getElementById('prPop').addEventListener('mouseout', e=>{
+  const cell = e.target.closest('.pr-cell');
+  if (cell && cell.dataset.date && cell.dataset.date===pickerHoverDate){
+    pickerHoverDate = null;
+    updatePickerHover();
+  }
+});
+/* 消耗区间分析：选择完成回调 */
+const partSel = ()=>({start:partState.start, end:partState.end});
+document.getElementById('prWeekBtn').onclick = function(){ openDatePicker('week', partSelect, partSel, partState.end||DAY_MAX, this); };
+document.getElementById('prMonthBtn').onclick = function(){ openDatePicker('month', partSelect, partSel, partState.end||DAY_MAX, this); };
+document.getElementById('prCustomBtn').onclick = function(){ openDatePicker('custom', partSelect, partSel, partState.end||DAY_MAX, this); };
+document.getElementById('prResetBtn').onclick = ()=>partSelect(DAY_MIN, DAY_MAX);
+document.getElementById('prOverlay').onclick = closeDatePicker;
+
+/* ============ ROI 分布 ============ */
+const ROI_BUCKETS = [
+  {key:'r0', label:'亏损区',   range:'ROI < 0.8',   color:'#c0523f'},
+  {key:'r1', label:'临界区',   range:'0.8 – 1.0',   color:'#d98a2b'},
+  {key:'r2', label:'达标区',   range:'1.0 – 1.2',   color:'#4c7faf'},
+  {key:'r3', label:'良好区',   range:'1.2 – 1.5',   color:'#3f9d78'},
+  {key:'r4', label:'优秀区',   range:'ROI ≥ 1.5',   color:'#1e5b4c'},
+  {key:'na', label:'未投放',   range:'无消耗 / 无ROI', color:'#b6bdb7'},
+];
+const ROI_BUCKET_MAP = Object.fromEntries(ROI_BUCKETS.map(b=>[b.key,b]));
+
+function roiKeyOf(m, mode){
+  if (mode === 'last') {
+    if (!(m.last_spend>0) || m.last_roi==null) return 'na';
+    const r = m.last_roi;
+    return r<0.8?'r0':r<1.0?'r1':r<1.2?'r2':r<1.5?'r3':'r4';
+  }
+  if (!(m.total_spend>0) || m.total_roi==null) return 'na';
+  const r = m.total_roi;
+  return r<0.8?'r0':r<1.0?'r1':r<1.2?'r2':r<1.5?'r3':'r4';
+}
+function buildRoiBuckets(mode, pool){
+  const buckets = ROI_BUCKETS.map(b=>({...b, items:[]}));
+  const bmap = Object.fromEntries(buckets.map(b=>[b.key,b]));
+  (pool || currentMats()).forEach(m=>{ bmap[roiKeyOf(m, mode)].items.push(m); });
+  return buckets;
+}
+function renderRoiTab(){
+  const mode = document.getElementById('roiMode').value;
+  const buckets = buildRoiBuckets(mode);
+  const total = currentMats().length;
+  const counted = buckets.filter(b=>b.key!=='na').reduce((s,b)=>s+b.items.length,0);
+  document.getElementById('roiSummary').textContent =
+    `口径：${mode==='total'?'累计整体 ROI':'最新周 ROI'} · 有效素材 ${counted} / ${total} 个 · 未投放 ${buckets.find(b=>b.key==='na').items.length} 个`;
+
+  const ch = mkChart('ch_roi_dist', {
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>{ const d=p[0]; return `${d.name}<br/>素材 <b>${d.value}</b> 个（点击查看明细）`; }},
+    grid:{left:56,right:20,top:30,bottom:52},
+    xAxis:{type:'category',data:buckets.map(b=>b.label), ...AXIS,
+      axisLabel:{...(AXIS.axisLabel||{}), interval:0, color:'#56665d', fontSize:11, lineHeight:15,
+        formatter:v=>{ const b=buckets.find(x=>x.label===v); return b? `${b.label}\n${b.range}` : v; }}},
+    yAxis:{type:'value',...GRID_LINE},
+    animation:false,
+    series:[{type:'bar',data:buckets.map(b=>b.items.length),barMaxWidth:56,
+      itemStyle:{color:p=>ROI_BUCKETS[p.dataIndex].color,
+        borderRadius:[4,4,0,0]},
+      label:{show:true,position:'top',color:'#56665d',fontSize:11,formatter:p=>p.value+' 个'}}]
+  });
+  if (ch) ch.on('click', p=>{ if(p.componentType==='series') openRoiDrawer(ROI_BUCKETS[p.dataIndex].key); });
+
+  const box = document.getElementById('roiBuckets');
+  box.innerHTML = buckets.map(b=>{
+    const spent = b.items.reduce((s,m)=>s+(mode==='last'?m.last_spend:m.total_spend||0),0);
+    const prev = b.items.slice(0,5).map(m=>{
+      const v = mode==='last'?m.last_roi:m.total_roi;
+      const sp = mode==='last'?m.last_spend:m.total_spend||0;
+      return `<div class="rp-row" data-key="${esc(m.key)}" title="点击查看素材详情"><span class="n" title="${esc(m.name)}">${esc(m.name)}</span><span class="v">${fmtRoi(v)}</span><span class="v" style="color:var(--ink-3);font-weight:500">${fmtMoney(sp)}</span></div>`;
+    }).join('');
+    return `<div class="roi-bucket" data-bk="${b.key}">
+      <div class="roi-bucket-head">
+        <span class="roi-dot" style="background:${b.color}"></span>
+        <span class="rb-t">${b.label} <span class="muted">${b.range}</span></span>
+        <span class="rb-n">${b.items.length}<small> 个</small><span class="rb-arrow">›</span></span>
+      </div>
+      ${b.items.length? `<div class="roi-preview">
+        <div class="rp-head"><span class="n">素材名称</span><span class="v">ROI</span><span class="v">消耗</span></div>
+        ${prev}
+      </div>`:''}
+      <div class="roi-bucket-foot">${b.items.length? `查看全部 ${b.items.length} 个 →` : '该区间暂无素材'}</div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.roi-bucket-head, .roi-bucket-foot').forEach(el=>{
+    el.onclick = ()=>openRoiDrawer(el.closest('.roi-bucket').dataset.bk);
+  });
+  box.querySelectorAll('.rp-row').forEach(r=>{
+    r.onclick = ()=>{
+      switchTab('materials');
+      setTimeout(()=>showMatDetail(r.dataset.key), 60);
+    };
+  });
+}
+
+/* ============ ROI 钻取抽屉（分页 50/页，适配大数据量） ============ */
+const roiState = { mode:'total', bk:null, q:'', page:0, pageSize:50, items:[], sortKey:'', sortDir:'desc' };
+function openRoiDrawer(bk, pool, mode){
+  mode = mode || document.getElementById('roiMode').value;
+  const b = buildRoiBuckets(mode, pool).find(x=>x.key===bk);
+  if (!b) return;
+  const btn = ROI_BUCKETS.find(x=>x.key===bk);
+  roiState.mode = mode; roiState.bk = bk; roiState.q = ''; roiState.page = 0; roiState.items = b.items;
+  document.getElementById('rdDot').style.background = btn.color;
+  document.getElementById('rdTitle').textContent = `${btn.label}（${btn.range}）`;
+  document.getElementById('rdSearch').value = '';
+  document.getElementById('rdSort').value = roiState.sortKey;
+  document.getElementById('rdSortDir').textContent = roiState.sortDir==='asc' ? '▲' : '▼';
+  document.getElementById('roiOverlay').classList.add('open');
+  document.getElementById('roiDrawer').classList.add('open');
+  document.getElementById('roiDrawer').setAttribute('aria-hidden','false');
+  renderRoiDrawer();
+}
+function renderRoiDrawer(){
+  const st = roiState;
+  const last = st.mode==='last';
+  const sortVal = m => {
+    switch (st.sortKey){
+      case 'spend': return last ? (m.last_spend||0) : (m.total_spend||0);
+      case 'pay':   return last ? (m.last_pay||0) : (m.total_pay||0);
+      case 'net':   return last ? (m.last_net_pay||0) : (m.total_net_pay||0);
+      case 'roi':   return last ? (m.last_roi!=null?m.last_roi:-Infinity) : (m.total_roi!=null?m.total_roi:-Infinity);
+      case 'order': return last ? (m.last_order_count||0) : (m.total_order_count||0);
+      case 'weeks': return m.active_weeks||0;
+      default: return 0;
+    }
+  };
+  const list = st.sortKey ? st.items.slice().sort((a,b)=> st.sortDir==='asc' ? sortVal(a)-sortVal(b) : sortVal(b)-sortVal(a)) : st.items;
+  const q = st.q.toLowerCase();
+  const filtered = q ? list.filter(m=>(m.name||'').toLowerCase().includes(q)||(m.mid||'').toLowerCase().includes(q)) : list;
+  const pages = Math.max(1, Math.ceil(filtered.length / st.pageSize));
+  if (st.page >= pages) st.page = pages - 1;
+  const start = st.page * st.pageSize;
+  const slice = filtered.slice(start, start + st.pageSize);
+  const lastMode = st.mode==='last';
+  const roiVal = m => lastMode ? (m.last_roi!=null?fmtRoi(m.last_roi):'<span class="muted">—</span>') : (m.total_roi!=null?fmtRoi(m.total_roi):'<span class="muted">—</span>');
+  document.getElementById('rdCount').textContent = `共 ${filtered.length} 个`;
+  document.getElementById('rdSub').textContent =
+    `口径：${lastMode?'最新周 ROI':'累计整体 ROI'} · 本区间素材 ${st.items.length} 个 · 点行查看素材详情`;
+  const tbody = document.getElementById('rdTbody');
+  const empty = document.getElementById('rdEmpty');
+  if (!slice.length){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    tbody.innerHTML = slice.map(m=>`<tr data-key="${esc(m.key)}" title="点击查看素材详情">
+      <td class="l"><span class="m-name" title="${esc(m.name)}">${esc(m.name)}</span></td>
+      <td>${roiVal(m)}</td>
+      <td>${fmtMoney(lastMode?m.last_spend:m.total_spend)}</td>
+      <td>${fmtMoney(lastMode?m.last_pay:m.total_pay)}</td>
+      <td>${m.active_weeks||0} 周</td>
+      <td><span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span></td>
+    </tr>`).join('');
+  }
+  document.getElementById('rdPg').textContent = `第 ${st.page+1} / ${pages} 页`;
+  document.getElementById('rdPrev').disabled = st.page <= 0;
+  document.getElementById('rdNext').disabled = st.page >= pages - 1;
+}
+function closeRoiDrawer(){
+  document.getElementById('roiDrawer').classList.remove('open');
+  document.getElementById('roiOverlay').classList.remove('open');
+  document.getElementById('roiDrawer').setAttribute('aria-hidden','true');
+}
+document.getElementById('rdClose').onclick = closeRoiDrawer;
+document.getElementById('roiOverlay').onclick = closeRoiDrawer;
+document.getElementById('rdPrev').onclick = ()=>{ if(roiState.page>0){ roiState.page--; renderRoiDrawer(); } };
+document.getElementById('rdNext').onclick = ()=>{ roiState.page++; renderRoiDrawer(); };
+let rdTimer = null;
+document.getElementById('rdSearch').addEventListener('input', e=>{
+  clearTimeout(rdTimer);
+  rdTimer = setTimeout(()=>{ roiState.q = e.target.value.trim(); roiState.page = 0; renderRoiDrawer(); }, 200);
+});
+document.getElementById('rdSort').onchange = e=>{ roiState.sortKey = e.target.value; roiState.page = 0; renderRoiDrawer(); };
+document.getElementById('rdSortDir').onclick = ()=>{
+  roiState.sortDir = roiState.sortDir==='asc' ? 'desc' : 'asc';
+  document.getElementById('rdSortDir').textContent = roiState.sortDir==='asc' ? '▲' : '▼';
+  renderRoiDrawer();
+};
+document.getElementById('rdTbody').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-key]');
+  if (!tr) return;
+  closeRoiDrawer();
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(tr.dataset.key), 60);
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeRoiDrawer(); });
+document.getElementById('roiMode').addEventListener('change', renderRoiTab);
+
+/* ============ AI素材（样式对齐 新增素材 / ROI分布 / 总览作者 板块） ============ */
+const aiMats = () => currentMats().filter(m=>m.is_ai);
+
+/* ---------- ① 每周新增 AI 素材（参考【新增素材】：时间周期 + 口径切换 + 字段设置 + 表格） ---------- */
+const AI_NEW_FIELDS = [
+  {key:'name', label:'素材名称', align:'l'},
+  {key:'ai_tag', label:'AI标识'},
+  {key:'created_at', label:'创建时间'},
+  {key:'channel', label:'渠道'},
+  {key:'product', label:'产品'},
+  {key:'author', label:'作者'},
+  {key:'total_spend', label:'区间消耗'},
+  {key:'total_pay', label:'区间成交金额'},
+  {key:'total_roi', label:'整体ROI'},
+  {key:'phase', label:'阶段'},
+];
+const AI_NEW_FIELD_MAP = Object.fromEntries(AI_NEW_FIELDS.map(f=>[f.key,f]));
+const AI_NEW_RENDERERS = {
+  name: m=>`<button class="mat-name-link" data-key="${esc(m.key)}" title="${esc(m.name)}">${esc(m.name)}</button>`,
+  ai_tag: m=>m.ai_tag?`<span class="tag ai">${esc(m.ai_tag)}</span>`:'—',
+  created_at: m=>esc(m.created_at)||'—',
+  channel: m=>esc(m.channel)||'—',
+  product: m=>esc(m.product)||'—',
+  author: m=>esc(m.author)||'—',
+  total_spend: m=>fmtMoney(m.total_spend),
+  total_pay: m=>fmtMoney(m.total_pay),
+  total_roi: m=>fmtRoi(m.total_roi),
+  phase: m=>`<span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span>`,
+};
+let aiNewMgr = null, aiNewInit = false;
+const aiNewStore = { items:null, cols:null, offset:0 };
+const AI_NEW_STEP = 50;
+function aiNewWeekItems(mode){
+  const w = document.getElementById('aiNewWeek').value;
+  const start = RANGE.start, end = RANGE.end;
+  return aiMats().filter(m=>{
+    const d = mode==='seen' ? (m.first_seen||'').slice(0,10) : (m.created_at||'').slice(0,10);
+    if (!d || d < start || d > end) return false;
+    return isoWeekStart(d) === w;
+  });
+}
+function renderAiNewTab(){
+  const sel = document.getElementById('aiNewWeek');
+  if (!aiNewInit){
+    sel.addEventListener('change', renderAiNewSelected);
+    aiNewMgr = new ColMgr('aiNewTable', AI_NEW_FIELDS, 'aiNew', ()=>renderAiNewSelected());
+    aiNewMgr.attach('aiNewColBtn', 'aiNewColPanel');
+    aiNewInit = true;
+  }
+  const weeks = (RV||D).weeks;
+  const ends = (RV||D).week_ends || D.week_ends;
+  sel.innerHTML = '';
+  weeks.forEach((w,i)=>{
+    const end = (ends && ends[i]) || w;
+    sel.add(new Option(`第${i+1}周（${w} ~ ${end}）`, w));
+  });
+  if (weeks.length) sel.value = weeks[weeks.length-1];
+  renderAiNewSelected();
+}
+function renderAiNewSelected(){
+  const mode = document.getElementById('aiNewMode').value;
+  const w = document.getElementById('aiNewWeek').value;
+  document.getElementById('aiNewHint').textContent =
+    mode==='created' ? '按素材创建时间落在该周（真实上新节奏）' : '按首次出现在该周的周报中（数据捕捉）';
+  const items = aiNewWeekItems(mode).sort((a,b)=>(b.total_spend||0)-(a.total_spend||0));
+  const cols = aiNewMgr.visible();
+  document.querySelector('#aiNewTable thead').innerHTML =
+    '<tr>' + cols.map(k=>`<th class="${AI_NEW_FIELD_MAP[k].align==='l'?'l':''}">${AI_NEW_FIELD_MAP[k].label}</th>`).join('') + '</tr>';
+  const tbody = document.querySelector('#aiNewTable tbody');
+  const more = document.getElementById('aiNewMore');
+  if (!cols.length){
+    tbody.innerHTML = '<tr><td class="empty">已隐藏全部字段，请在「字段设置」中勾选</td></tr>';
+    more.style.display = 'none';
+  } else if (!items.length){
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" class="empty">该周无新增 AI 素材</td></tr>`;
+    more.style.display = 'none';
+  } else {
+    aiNewStore.items = items; aiNewStore.cols = cols; aiNewStore.offset = 0;
+    tbody.innerHTML = '';
+    renderAiNewRows(tbody, more);
+  }
+  const end = weekEndOf(w) || w;
+  document.getElementById('aiNewSummary').textContent =
+    `所选周期 ${w} ~ ${end} · 新增 AI 素材 ${items.length} 个`;
+}
+function renderAiNewRows(tbody, more){
+  const st = aiNewStore;
+  const slice = st.items.slice(st.offset, st.offset + AI_NEW_STEP);
+  st.offset += slice.length;
+  tbody.insertAdjacentHTML('beforeend', slice.map(m=>'<tr title="点击查看素材详情">' + st.cols.map(k=>`<td class="${AI_NEW_FIELD_MAP[k].align==='l'?'l':''}">${AI_NEW_RENDERERS[k](m)}</td>`).join('') + '</tr>').join(''));
+  if (st.offset >= st.items.length){
+    more.textContent = `已全部加载（共 ${st.items.length} 个）`;
+    more.style.display = 'none';
+  } else {
+    more.textContent = `加载更多（已显示 ${st.offset} / ${st.items.length}）`;
+    more.style.display = 'block';
+    more.onclick = ()=>renderAiNewRows(tbody, more);
+  }
+}
+document.getElementById('aiNewMode').addEventListener('change', renderAiNewSelected);
+
+/* ---------- ② AI素材排行（表格形式：产品筛选 + 指定字段 + TOP N，占一整列） ---------- */
+const AI_RANK_KEY = {spend:'total_spend',pay:'total_pay',net:'total_net_pay',roi:'total_roi',netroi:'total_net_roi',order:'total_order_count',weeks:'active_weeks'};
+let aiRankProdFilled = false;
+function fillAiRankProduct(){
+  const sel = document.getElementById('aiRankProduct');
+  if (!sel || aiRankProdFilled) return;
+  const set = new Set();
+  D.materials.forEach(m=>{ if (m.is_ai) set.add(m.product || '未归类'); });
+  sel.innerHTML = '<option value="">全部产品</option>' +
+    [...set].sort().map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  aiRankProdFilled = true;
+}
+function renderAiRank(){
+  const field = document.getElementById('aiRankField').value;
+  const prod = document.getElementById('aiRankProduct').value;
+  const n = parseInt(document.getElementById('aiRankN').value,10)||10;
+  const key = AI_RANK_KEY[field];
+  const isRoi = field==='roi' || field==='netroi';
+  const val = m => { const v=m[key]; return (v==null||v==='') ? (isRoi?-Infinity:0) : v; };
+  const rows = aiMats().filter(m=>!m.is_aggregate && (!prod || (m.product||'未归类')===prod))
+    .slice().sort((a,b)=>val(b)-val(a)).slice(0,n);
+  document.querySelector('#aiRankTable thead').innerHTML =
+    '<tr><th>#</th><th class="l">素材名称</th><th>AI标识</th><th>渠道</th><th>产品</th><th>作者</th><th>创建时间</th><th>区间消耗</th><th>区间成交金额</th><th>净成交</th><th>整体ROI</th><th>净成交ROI</th><th>订单</th><th>在投周</th><th>阶段</th></tr>';
+  const tbody = document.querySelector('#aiRankTable tbody');
+  tbody.innerHTML = rows.length ? rows.map((m,i)=>`<tr data-key="${esc(m.key)}" title="点击查看素材详情">
+    <td>${i+1}</td>
+    <td class="l"><span class="m-name ai-rank-name" title="${esc(m.name)}">${esc(m.name)}</span></td>
+    <td>${m.ai_tag?'<span class="tag ai">'+esc(m.ai_tag)+'</span>':'—'}</td>
+    <td>${esc(m.channel)||'—'}</td>
+    <td>${esc(m.product)||'—'}</td>
+    <td>${esc(m.author)||'—'}</td>
+    <td>${esc(m.created_at)||'—'}</td>
+    <td>${fmtMoney(m.total_spend)}</td>
+    <td>${fmtMoney(m.total_pay)}</td>
+    <td>${fmtMoney(m.total_net_pay)}</td>
+    <td>${fmtRoi(m.total_roi)}</td>
+    <td>${fmtRoi(m.total_net_roi)}</td>
+    <td>${Number(m.total_order_count||0).toLocaleString('zh-CN')}</td>
+    <td>${m.active_weeks||0}</td>
+    <td><span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span></td>
+  </tr>`).join('') : '<tr><td colspan="15" class="empty">区间内暂无 AI 素材</td></tr>';
+}
+document.getElementById('aiRankProduct').addEventListener('change', renderAiRank);
+document.getElementById('aiRankField').addEventListener('change', renderAiRank);
+document.getElementById('aiRankN').addEventListener('change', renderAiRank);
+
+/* ---------- ③ AI素材 ROI 区间分布（参考【ROI分布】：图表 + 区间明细 + 钻取抽屉，占一整列） ---------- */
+function renderAiRoi(){
+  const mode = document.getElementById('aiRoiMode').value;
+  const buckets = buildRoiBuckets(mode, aiMats());
+  const ch = mkChart('ch_ai_roi', {
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>{const d=p[0]; return `${d.name}<br/>AI素材 <b>${d.value}</b> 个（点击查看明细）`;}},
+    grid:{left:56,right:20,top:30,bottom:52},
+    xAxis:{type:'category',data:buckets.map(b=>b.label),...AXIS,
+      axisLabel:{...(AXIS.axisLabel||{}),interval:0,color:'#56665d',fontSize:11,lineHeight:15,
+        formatter:v=>{ const b=buckets.find(x=>x.label===v); return b? `${b.label}\n${b.range}` : v; }}},
+    yAxis:{type:'value',...GRID_LINE},
+    animation:false,
+    series:[{type:'bar',data:buckets.map(b=>b.items.length),barMaxWidth:56,
+      itemStyle:{color:p=>ROI_BUCKETS[p.dataIndex].color,borderRadius:[4,4,0,0]},
+      label:{show:true,position:'top',color:'#56665d',fontSize:11,formatter:p=>p.value+' 个'}}]
+  });
+  if (ch){ ch.off('click'); ch.on('click', p=>{ if(p.componentType==='series') openAiRoiDrawer(ROI_BUCKETS[p.dataIndex].key); }); }
+  const box = document.getElementById('aiRoiBuckets');
+  box.innerHTML = buckets.map(b=>{
+    const spent = b.items.reduce((s,m)=>s+(mode==='last'?m.last_spend:m.total_spend||0),0);
+    const prev = b.items.slice(0,5).map(m=>{
+      const v = mode==='last'?m.last_roi:m.total_roi;
+      const sp = mode==='last'?m.last_spend:m.total_spend||0;
+      return `<div class="rp-row" data-key="${esc(m.key)}" title="点击查看素材详情"><span class="n" title="${esc(m.name)}">${esc(m.name)}</span><span class="v">${fmtRoi(v)}</span><span class="v" style="color:var(--ink-3);font-weight:500">${fmtMoney(sp)}</span></div>`;
+    }).join('');
+    return `<div class="roi-bucket" data-bk="${b.key}">
+      <div class="roi-bucket-head"><span class="roi-dot" style="background:${b.color}"></span>
+        <span class="rb-t">${b.label} <span class="muted">${b.range}</span></span>
+        <span class="rb-n">${b.items.length}<small> 个</small><span class="rb-arrow">›</span></span>
+      </div>
+      ${b.items.length? `<div class="roi-preview"><div class="rp-head"><span class="n">素材名称</span><span class="v">ROI</span><span class="v">消耗</span></div>${prev}</div>`:''}
+      <div class="roi-bucket-foot">${b.items.length? `查看全部 ${b.items.length} 个 →` : '该区间暂无素材'}</div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.roi-bucket-head, .roi-bucket-foot').forEach(el=>{
+    el.onclick = ()=>openAiRoiDrawer(el.closest('.roi-bucket').dataset.bk);
+  });
+  box.querySelectorAll('.rp-row').forEach(r=>{
+    r.onclick = ()=>{ switchTab('materials'); setTimeout(()=>showMatDetail(r.dataset.key), 60); };
+  });
+}
+function openAiRoiDrawer(bk){
+  const mode = document.getElementById('aiRoiMode').value;
+  openRoiDrawer(bk, aiMats(), mode);
+}
+document.getElementById('aiRoiMode').addEventListener('change', renderAiRoi);
+
+/* ---------- ③-2 AI素材作者汇总（不区分全职/其他，汇总表 + 点击作者行展示该作者 AI 素材 TOP，占一整列） ---------- */
+const AI_AUTHOR_COLS = [
+  {k:'author', l:'作者', left:true},
+  {k:'count', l:'素材数'},
+  {k:'spend', l:'消耗'},
+  {k:'pay', l:'成交金额'},
+  {k:'net', l:'净成交'},
+  {k:'roi', l:'整体ROI'},
+  {k:'net_roi', l:'净成交ROI'},
+  {k:'refund', l:'退款率'},
+  {k:'settle', l:'结算率'},
+];
+let activeAiAuthor = null;
+function buildAiAuthorRows(){
+  const start = RANGE.start, end = RANGE.end;
+  const map = {};
+  D.materials.forEach(m=>{
+    if (!m.is_ai || !m.author) return;
+    const a = m.author;
+    const g = aggRange(m, start, end);
+    let b = map[a] || (map[a] = {count:0, spend:0, pay:0, net:0, order:0, rrN:0, rrD:0, srN:0, srD:0});
+    b.count++; b.spend += g.spend; b.pay += g.pay; b.net += g.net; b.order += g.order;
+    b.rrN += (g.refund||0)*(g.pay||0); b.rrD += g.pay||0;
+    b.srN += (g.settle||0)*(g.net||0); b.srD += g.net||0;
+  });
+  return Object.entries(map).map(([author,b])=>({
+    author, count: b.count,
+    spend: round2(b.spend), pay: round2(b.pay), net: round2(b.net), order: round2(b.order),
+    roi: b.pay ? b.pay/b.spend : null, net_roi: b.net ? b.net/b.spend : null,
+    refund: b.rrD ? b.rrN/b.rrD : null, settle: b.srD ? b.srN/b.srD : null,
+  })).sort((x,y)=>y.spend-x.spend);
+}
+function renderAiAuthorTable(){
+  const rows = buildAiAuthorRows();
+  document.querySelector('#aiAuthorTable thead').innerHTML =
+    '<tr>'+AI_AUTHOR_COLS.map(c=>`<th class="${c.left?'l ':''}">${c.l}</th>`).join('')+'</tr>';
+  document.querySelector('#aiAuthorTable tbody').innerHTML = rows.length
+    ? rows.map(r=>`<tr data-author="${esc(r.author)}" class="${r.author===activeAiAuthor?'act':''}">
+        <td class="l">${esc(r.author)}</td>
+        <td>${r.count}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${fmtRoi(r.net_roi)}</td>
+        <td>${fmtPct(r.refund)}</td>
+        <td>${fmtPct(r.settle)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" class="empty">该区间无 AI 素材作者数据</td></tr>';
+}
+const aiAuthorTopSortVal = ()=> (document.getElementById('aiAuthorTopSort')||{value:'spend'}).value;
+function aiAuthorTopMats(author){
+  const start = RANGE.start, end = RANGE.end;
+  const list = [];
+  D.materials.forEach(m=>{
+    if (!m.is_ai || m.author !== author) return;
+    const g = aggRange(m, start, end);
+    list.push({ key:m.key, name:m.name||'', product:m.product||'', channel:m.channel||'',
+      ai_tag:m.ai_tag||'AI', spend:g.spend, pay:g.pay, net:g.net, order:g.order,
+      roi:g.pay?g.pay/g.spend:null, phase:m.phase||'' });
+  });
+  const k = aiAuthorTopSortVal();
+  const key = k==='roi' ? 'roi' : k==='net' ? 'net' : k==='order' ? 'order' : k==='pay' ? 'pay' : 'spend';
+  return list.sort((a,b)=>(b[key]||0)-(a[key]||0)).slice(0,10);
+}
+function renderAiAuthorTop(){
+  const hint = document.getElementById('aiAuthorTopHint');
+  const body = document.getElementById('aiAuthorTopBody');
+  if (!activeAiAuthor){
+    hint.textContent = '';
+    body.innerHTML = '<div class="empty">点击上方 AI素材作者汇总表中的作者行，查看该作者 AI 素材 TOP10（再点素材行可跳转素材库详情）</div>';
+    return;
+  }
+  hint.textContent = `${activeAiAuthor} · 区间 ${RANGE.start} ~ ${RANGE.end} · 点击素材行查看详情`;
+  const rows = aiAuthorTopMats(activeAiAuthor);
+  body.innerHTML = rows.length
+    ? `<table class="auth-table"><thead><tr>
+        <th>#</th><th class="l">素材名称</th><th>AI标识</th><th>产品</th><th>渠道</th><th>消耗</th><th>成交金额</th><th>净成交</th><th>整体ROI</th><th>订单</th><th>阶段</th>
+      </tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr data-key="${esc(r.key)}" title="点击查看素材详情">
+        <td>${i+1}</td>
+        <td class="l" title="${esc(r.name)}">${esc(r.name.length>40? r.name.slice(0,40)+'…' : r.name)}</td>
+        <td>${r.ai_tag?`<span class="tag ai">${esc(r.ai_tag)}</span>`:'—'}</td>
+        <td>${esc(r.product)||'—'}</td>
+        <td>${esc(r.channel)||'—'}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${Number(r.order||0).toLocaleString('zh-CN')}</td>
+        <td>${esc(r.phase)||'—'}</td>
+      </tr>`).join('')}
+      </tbody></table>`
+    : '<div class="empty">该作者当前区间无 AI 投放素材</div>';
+}
+function setActiveAiAuthor(author){
+  activeAiAuthor = author;
+  renderAiAuthorTable();
+  renderAiAuthorTop();
+}
+document.getElementById('aiAuthorTable').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-author]');
+  if (tr) setActiveAiAuthor(tr.dataset.author);
+});
+document.getElementById('aiAuthorTopSort').addEventListener('change', ()=>{ if (activeAiAuthor) renderAiAuthorTop(); });
+document.getElementById('aiAuthorTopBody').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-key]');
+  if (!tr) return;
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(tr.dataset.key), 120);
+});
+
+/* ---------- ④ AI素材标识汇总（参考【总览】作者板块：汇总表 + 点击行展示素材 TOP，占一整列） ---------- */
+const AI_TAG_COLS = [
+  {k:'ai_tag', l:'AI标识', left:true},
+  {k:'count', l:'素材数'},
+  {k:'spend', l:'消耗'},
+  {k:'pay', l:'成交金额'},
+  {k:'net', l:'净成交'},
+  {k:'roi', l:'整体ROI'},
+  {k:'net_roi', l:'净成交ROI'},
+  {k:'refund', l:'退款率'},
+  {k:'settle', l:'结算率'},
+];
+let activeAiTag = null;
+function buildAiTagRows(){
+  const start = RANGE.start, end = RANGE.end;
+  const map = {};
+  D.materials.forEach(m=>{
+    if (!m.is_ai) return;
+    const t = m.ai_tag || 'AI';
+    const g = aggRange(m, start, end);
+    let b = map[t] || (map[t] = {count:0, spend:0, pay:0, net:0, order:0, rrN:0, rrD:0, srN:0, srD:0});
+    b.count++; b.spend += g.spend; b.pay += g.pay; b.net += g.net; b.order += g.order;
+    b.rrN += (g.refund||0)*(g.pay||0); b.rrD += g.pay||0;
+    b.srN += (g.settle||0)*(g.net||0); b.srD += g.net||0;
+  });
+  return Object.entries(map).map(([tag,b])=>({
+    ai_tag: tag, count: b.count,
+    spend: round2(b.spend), pay: round2(b.pay), net: round2(b.net), order: round2(b.order),
+    roi: b.pay ? b.pay/b.spend : null, net_roi: b.net ? b.net/b.spend : null,
+    refund: b.rrD ? b.rrN/b.rrD : null, settle: b.srD ? b.srN/b.srD : null,
+  })).sort((x,y)=>y.spend-x.spend);
+}
+function renderAiTagTable(){
+  const rows = buildAiTagRows();
+  document.querySelector('#aiTagTable thead').innerHTML =
+    '<tr>'+AI_TAG_COLS.map(c=>`<th class="${c.left?'l ':''}">${c.l}</th>`).join('')+'</tr>';
+  document.querySelector('#aiTagTable tbody').innerHTML = rows.length
+    ? rows.map(r=>`<tr data-tag="${esc(r.ai_tag)}" class="${r.ai_tag===activeAiTag?'act':''}">
+        <td class="l">${r.ai_tag?`<span class="tag ai">${esc(r.ai_tag)}</span>`:'AI'}</td>
+        <td>${r.count}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${fmtRoi(r.net_roi)}</td>
+        <td>${fmtPct(r.refund)}</td>
+        <td>${fmtPct(r.settle)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" class="empty">该区间无 AI 素材</td></tr>';
+}
+const aiTagTopSortVal = ()=> (document.getElementById('aiTagTopSort')||{value:'spend'}).value;
+function aiTagTopMats(tag){
+  const start = RANGE.start, end = RANGE.end;
+  const list = [];
+  D.materials.forEach(m=>{
+    if (!m.is_ai || (m.ai_tag||'AI') !== tag) return;
+    const g = aggRange(m, start, end);
+    list.push({ key:m.key, name:m.name||'', product:m.product||'', channel:m.channel||'',
+      spend:g.spend, pay:g.pay, net:g.net, order:g.order, roi:g.pay?g.pay/g.spend:null, phase:m.phase||'' });
+  });
+  const k = aiTagTopSortVal();
+  const key = k==='roi' ? 'roi' : k==='net' ? 'net' : k==='order' ? 'order' : k==='pay' ? 'pay' : 'spend';
+  return list.sort((a,b)=>(b[key]||0)-(a[key]||0)).slice(0,10);
+}
+function renderAiTagTop(){
+  const hint = document.getElementById('aiTagTopHint');
+  const body = document.getElementById('aiTagTopBody');
+  if (!activeAiTag){
+    hint.textContent = '';
+    body.innerHTML = '<div class="empty">点击上方 AI素材标识汇总表中的标识行，查看该标识 TOP10 素材（再点素材行可跳转素材库详情）</div>';
+    return;
+  }
+  hint.textContent = `${activeAiTag} · 区间 ${RANGE.start} ~ ${RANGE.end} · 点击素材行查看详情`;
+  const rows = aiTagTopMats(activeAiTag);
+  body.innerHTML = rows.length
+    ? `<table class="auth-table"><thead><tr>
+        <th>#</th><th class="l">素材名称</th><th>产品</th><th>渠道</th><th>消耗</th><th>成交金额</th><th>净成交</th><th>整体ROI</th><th>订单</th><th>阶段</th>
+      </tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr data-key="${esc(r.key)}" title="点击查看素材详情">
+        <td>${i+1}</td>
+        <td class="l" title="${esc(r.name)}">${esc(r.name.length>40? r.name.slice(0,40)+'…' : r.name)}</td>
+        <td>${esc(r.product)||'—'}</td>
+        <td>${esc(r.channel)||'—'}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${Number(r.order||0).toLocaleString('zh-CN')}</td>
+        <td>${esc(r.phase)||'—'}</td>
+      </tr>`).join('')}
+      </tbody></table>`
+    : '<div class="empty">该标识当前区间无投放素材</div>';
+}
+function setActiveAiTag(tag){
+  activeAiTag = tag;
+  renderAiTagTable();
+  renderAiTagTop();
+}
+document.getElementById('aiTagTable').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-tag]');
+  if (tr) setActiveAiTag(tr.dataset.tag);
+});
+document.getElementById('aiTagTopSort').addEventListener('change', ()=>{ if (activeAiTag) renderAiTagTop(); });
+document.getElementById('aiTagTopBody').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-key]');
+  if (!tr) return;
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(tr.dataset.key), 120);
+});
+
+/* ---------- AI素材板块总入口 ---------- */
+function renderAiTab(){
+  renderAiNewTab();
+  fillAiRankProduct();
+  renderAiRank();
+  renderAiRoi();
+  renderAiAuthorTable();
+  renderAiAuthorTop();
+  renderAiTagTable();
+  renderAiTagTop();
+}
+
+/* ============ 素材评估（素材状态为核心，布局参考 AI素材板块） ============ */
+const NO_EVAL = '__none__';
+const evalOf = m => m.evaluation || '';
+/* 状态筛选项填充：真实状态 + 无评估；供 ①新增 与 ②排行 共用 */
+let evFilterFilled = false;
+function fillEvalFilters(){
+  if (evFilterFilled) return;
+  const set = new Set();
+  D.materials.forEach(m=>{ const e = m.evaluation; if (e) set.add(e); });
+  const opts = ['<option value="">全部评估</option>',
+                `<option value="${NO_EVAL}">无评估</option>`]
+    .concat([...set].sort().map(e=>`<option value="${esc(e)}">${esc(e)}</option>`));
+  document.getElementById('evNewState').innerHTML = opts.join('');
+  document.getElementById('evRankState').innerHTML = opts.join('');
+  evFilterFilled = true;
+}
+function evalMatch(m, state){
+  if (!state) return true;
+  if (state === NO_EVAL) return !(m.evaluation);
+  return (m.evaluation||'') === state;
+}
+/* 全部素材（按当前区间） */
+const evalMats = () => currentMats();
+
+/* ---------- ① 每周新增素材（评估明细，参考 AI素材①） ---------- */
+const EV_NEW_FIELDS = [
+  {key:'name', label:'素材名称', align:'l'},
+  {key:'evaluation', label:'评估状态'},
+  {key:'ai_tag', label:'AI标识'},
+  {key:'created_at', label:'创建时间'},
+  {key:'channel', label:'渠道'},
+  {key:'product', label:'产品'},
+  {key:'author', label:'作者'},
+  {key:'total_spend', label:'区间消耗'},
+  {key:'total_pay', label:'区间成交金额'},
+  {key:'total_roi', label:'整体ROI'},
+  {key:'phase', label:'阶段'},
+];
+const EV_NEW_FIELD_MAP = Object.fromEntries(EV_NEW_FIELDS.map(f=>[f.key,f]));
+const EV_NEW_RENDERERS = {
+  name: m=>`<button class="mat-name-link" data-key="${esc(m.key)}" title="${esc(m.name)}">${esc(m.name)}</button>`,
+  evaluation: m=>m.evaluation?`<span class="tag ev">${esc(m.evaluation)}</span>`:'<span class="muted">—</span>',
+  ai_tag: m=>m.ai_tag?`<span class="tag ai">${esc(m.ai_tag)}</span>`:'—',
+  created_at: m=>esc(m.created_at)||'—',
+  channel: m=>esc(m.channel)||'—',
+  product: m=>esc(m.product)||'—',
+  author: m=>esc(m.author)||'—',
+  total_spend: m=>fmtMoney(m.total_spend),
+  total_pay: m=>fmtMoney(m.total_pay),
+  total_roi: m=>fmtRoi(m.total_roi),
+  phase: m=>`<span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span>`,
+};
+let evNewMgr = null, evNewInit = false;
+const evNewStore = { items:null, cols:null, offset:0 };
+const EV_NEW_STEP = 50;
+function evNewWeekItems(mode){
+  const w = document.getElementById('evNewWeek').value;
+  const state = document.getElementById('evNewState').value;
+  const start = RANGE.start, end = RANGE.end;
+  return evalMats().filter(m=>{
+    if (!evalMatch(m, state)) return false;
+    const d = mode==='seen' ? (m.first_seen||'').slice(0,10) : (m.created_at||'').slice(0,10);
+    if (!d || d < start || d > end) return false;
+    return isoWeekStart(d) === w;
+  });
+}
+function renderEvNewTab(){
+  const sel = document.getElementById('evNewWeek');
+  if (!evNewInit){
+    sel.addEventListener('change', renderEvNewSelected);
+    evNewMgr = new ColMgr('evNewTable', EV_NEW_FIELDS, 'evNew', ()=>renderEvNewSelected());
+    evNewMgr.attach('evNewColBtn', 'evNewColPanel');
+    evNewInit = true;
+  }
+  const weeks = (RV||D).weeks;
+  const ends = (RV||D).week_ends || D.week_ends;
+  sel.innerHTML = '';
+  weeks.forEach((w,i)=>{
+    const end = (ends && ends[i]) || w;
+    sel.add(new Option(`第${i+1}周（${w} ~ ${end}）`, w));
+  });
+  if (weeks.length) sel.value = weeks[weeks.length-1];
+  renderEvNewSelected();
+}
+function renderEvNewSelected(){
+  const mode = document.getElementById('evNewMode').value;
+  const w = document.getElementById('evNewWeek').value;
+  document.getElementById('evNewHint').textContent =
+    mode==='created' ? '按素材创建时间落在该周（真实上新节奏）' : '按首次出现在该周的周报中（数据捕捉）';
+  const items = evNewWeekItems(mode).sort((a,b)=>(b.total_spend||0)-(a.total_spend||0));
+  const cols = evNewMgr.visible();
+  document.querySelector('#evNewTable thead').innerHTML =
+    '<tr>' + cols.map(k=>`<th class="${EV_NEW_FIELD_MAP[k].align==='l'?'l':''}">${EV_NEW_FIELD_MAP[k].label}</th>`).join('') + '</tr>';
+  const tbody = document.querySelector('#evNewTable tbody');
+  const more = document.getElementById('evNewMore');
+  if (!cols.length){
+    tbody.innerHTML = '<tr><td class="empty">已隐藏全部字段，请在「字段设置」中勾选</td></tr>';
+    more.style.display = 'none';
+  } else if (!items.length){
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" class="empty">该周无匹配素材</td></tr>`;
+    more.style.display = 'none';
+  } else {
+    evNewStore.items = items; evNewStore.cols = cols; evNewStore.offset = 0;
+    tbody.innerHTML = '';
+    renderEvNewRows(tbody, more);
+  }
+  const end = weekEndOf(w) || w;
+  document.getElementById('evNewSummary').textContent =
+    `所选周期 ${w} ~ ${end} · 新增素材 ${items.length} 个`;
+}
+function renderEvNewRows(tbody, more){
+  const st = evNewStore;
+  const slice = st.items.slice(st.offset, st.offset + EV_NEW_STEP);
+  st.offset += slice.length;
+  tbody.insertAdjacentHTML('beforeend', slice.map(m=>'<tr title="点击查看素材详情">' + st.cols.map(k=>`<td class="${EV_NEW_FIELD_MAP[k].align==='l'?'l':''}">${EV_NEW_RENDERERS[k](m)}</td>`).join('') + '</tr>').join(''));
+  if (st.offset >= st.items.length){
+    more.textContent = `已全部加载（共 ${st.items.length} 个）`;
+    more.style.display = 'none';
+  } else {
+    more.textContent = `加载更多（已显示 ${st.offset} / ${st.items.length}）`;
+    more.style.display = 'block';
+    more.onclick = ()=>renderEvNewRows(tbody, more);
+  }
+}
+document.getElementById('evNewMode').addEventListener('change', renderEvNewSelected);
+document.getElementById('evNewState').addEventListener('change', renderEvNewSelected);
+
+/* ---------- ② 素材评估排行（状态筛选 + 字段排序 + TOP N，占一整列，参考 AI素材②） ---------- */
+const EV_RANK_KEY = {spend:'total_spend',pay:'total_pay',net:'total_net_pay',roi:'total_roi',netroi:'total_net_roi',order:'total_order_count',weeks:'active_weeks'};
+function renderEvRank(){
+  const field = document.getElementById('evRankField').value;
+  const state = document.getElementById('evRankState').value;
+  const n = parseInt(document.getElementById('evRankN').value,10)||10;
+  const key = EV_RANK_KEY[field];
+  const isRoi = field==='roi' || field==='netroi';
+  const val = m => { const v=m[key]; return (v==null||v==='') ? (isRoi?-Infinity:0) : v; };
+  const rows = evalMats().filter(m=>!m.is_aggregate && evalMatch(m, state))
+    .slice().sort((a,b)=>val(b)-val(a)).slice(0,n);
+  document.querySelector('#evRankTable thead').innerHTML =
+    '<tr><th>#</th><th class="l">素材名称</th><th>评估状态</th><th>AI标识</th><th>渠道</th><th>产品</th><th>作者</th><th>创建时间</th><th>区间消耗</th><th>区间成交金额</th><th>净成交</th><th>整体ROI</th><th>净成交ROI</th><th>订单</th><th>在投周</th><th>阶段</th></tr>';
+  const tbody = document.querySelector('#evRankTable tbody');
+  tbody.innerHTML = rows.length ? rows.map((m,i)=>`<tr data-key="${esc(m.key)}" title="点击查看素材详情">
+    <td>${i+1}</td>
+    <td class="l"><span class="m-name ev-rank-name" title="${esc(m.name)}">${esc(m.name)}</span></td>
+    <td>${m.evaluation?'<span class="tag ev">'+esc(m.evaluation)+'</span>':'<span class="muted">—</span>'}</td>
+    <td>${m.ai_tag?'<span class="tag ai">'+esc(m.ai_tag)+'</span>':'—'}</td>
+    <td>${esc(m.channel)||'—'}</td>
+    <td>${esc(m.product)||'—'}</td>
+    <td>${esc(m.author)||'—'}</td>
+    <td>${esc(m.created_at)||'—'}</td>
+    <td>${fmtMoney(m.total_spend)}</td>
+    <td>${fmtMoney(m.total_pay)}</td>
+    <td>${fmtMoney(m.total_net_pay)}</td>
+    <td>${fmtRoi(m.total_roi)}</td>
+    <td>${fmtRoi(m.total_net_roi)}</td>
+    <td>${Number(m.total_order_count||0).toLocaleString('zh-CN')}</td>
+    <td>${m.active_weeks||0}</td>
+    <td><span class="tag ${phaseClass(m.phase)}">${esc(m.phase)}</span></td>
+  </tr>`).join('') : '<tr><td colspan="16" class="empty">区间内暂无匹配素材</td></tr>';
+}
+document.getElementById('evRankState').addEventListener('change', renderEvRank);
+document.getElementById('evRankField').addEventListener('change', renderEvRank);
+document.getElementById('evRankN').addEventListener('change', renderEvRank);
+
+/* ---------- ③ 评估状态汇总（占一整列，参考 AI素材④） ---------- */
+const EV_STATE_COLS = [
+  {k:'evaluation', l:'评估状态', left:true},
+  {k:'count', l:'素材数'},
+  {k:'spend', l:'消耗'},
+  {k:'pay', l:'成交金额'},
+  {k:'net', l:'净成交'},
+  {k:'roi', l:'整体ROI'},
+  {k:'net_roi', l:'净成交ROI'},
+  {k:'refund', l:'退款率'},
+  {k:'settle', l:'结算率'},
+];
+let activeEvState = null;
+function buildEvStateRows(){
+  const start = RANGE.start, end = RANGE.end;
+  const map = {};
+  D.materials.forEach(m=>{
+    const e = m.evaluation || '无评估';
+    const g = aggRange(m, start, end);
+    let b = map[e] || (map[e] = {count:0, spend:0, pay:0, net:0, order:0, rrN:0, rrD:0, srN:0, srD:0});
+    b.count++; b.spend += g.spend; b.pay += g.pay; b.net += g.net; b.order += g.order;
+    b.rrN += (g.refund||0)*(g.pay||0); b.rrD += g.pay||0;
+    b.srN += (g.settle||0)*(g.net||0); b.srD += g.net||0;
+  });
+  return Object.entries(map).map(([e,b])=>({
+    evaluation: e, count: b.count,
+    spend: round2(b.spend), pay: round2(b.pay), net: round2(b.net), order: round2(b.order),
+    roi: b.pay ? b.pay/b.spend : null, net_roi: b.net ? b.net/b.spend : null,
+    refund: b.rrD ? b.rrN/b.rrD : null, settle: b.srD ? b.srN/b.srD : null,
+  })).sort((x,y)=>y.spend-x.spend);
+}
+function renderEvStateTable(){
+  const rows = buildEvStateRows();
+  document.querySelector('#evStateTable thead').innerHTML =
+    '<tr>'+EV_STATE_COLS.map(c=>`<th class="${c.left?'l ':''}">${c.l}</th>`).join('')+'</tr>';
+  document.querySelector('#evStateTable tbody').innerHTML = rows.length
+    ? rows.map(r=>`<tr data-state="${esc(r.evaluation)}" class="${r.evaluation===activeEvState?'act':''}">
+        <td class="l">${r.evaluation==='无评估'?esc(r.evaluation):`<span class="tag ev">${esc(r.evaluation)}</span>`}</td>
+        <td>${r.count}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${fmtRoi(r.net_roi)}</td>
+        <td>${fmtPct(r.refund)}</td>
+        <td>${fmtPct(r.settle)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" class="empty">该区间无素材数据</td></tr>';
+}
+const evStateTopSortVal = ()=> (document.getElementById('evStateTopSort')||{value:'spend'}).value;
+function evStateTopMats(state){
+  const start = RANGE.start, end = RANGE.end;
+  const list = [];
+  D.materials.forEach(m=>{
+    const e = m.evaluation || '无评估';
+    if (e !== state) return;
+    const g = aggRange(m, start, end);
+    list.push({ key:m.key, name:m.name||'', product:m.product||'', channel:m.channel||'',
+      evaluation:m.evaluation||'', ai_tag:m.ai_tag||'', spend:g.spend, pay:g.pay, net:g.net,
+      order:g.order, roi:g.pay?g.pay/g.spend:null, phase:m.phase||'' });
+  });
+  const k = evStateTopSortVal();
+  const key = k==='roi' ? 'roi' : k==='net' ? 'net' : k==='order' ? 'order' : k==='pay' ? 'pay' : 'spend';
+  return list.sort((a,b)=>(b[key]||0)-(a[key]||0)).slice(0,10);
+}
+function renderEvStateTop(){
+  const hint = document.getElementById('evStateTopHint');
+  const body = document.getElementById('evStateTopBody');
+  if (!activeEvState){
+    hint.textContent = '';
+    body.innerHTML = '<div class="empty">点击上方 评估状态汇总表中的状态行，查看该状态 TOP10 素材（再点素材行可跳转素材库详情）</div>';
+    return;
+  }
+  hint.textContent = `${activeEvState} · 区间 ${RANGE.start} ~ ${RANGE.end} · 点击素材行查看详情`;
+  const rows = evStateTopMats(activeEvState);
+  body.innerHTML = rows.length
+    ? `<table class="auth-table"><thead><tr>
+        <th>#</th><th class="l">素材名称</th><th>评估状态</th><th>AI标识</th><th>产品</th><th>渠道</th><th>消耗</th><th>成交金额</th><th>净成交</th><th>整体ROI</th><th>订单</th><th>阶段</th>
+      </tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr data-key="${esc(r.key)}" title="点击查看素材详情">
+        <td>${i+1}</td>
+        <td class="l" title="${esc(r.name)}">${esc(r.name.length>40? r.name.slice(0,40)+'…' : r.name)}</td>
+        <td>${r.evaluation?`<span class="tag ev">${esc(r.evaluation)}</span>`:'<span class="muted">—</span>'}</td>
+        <td>${r.ai_tag?`<span class="tag ai">${esc(r.ai_tag)}</span>`:'—'}</td>
+        <td>${esc(r.product)||'—'}</td>
+        <td>${esc(r.channel)||'—'}</td>
+        <td>${fmtMoney(r.spend)}</td>
+        <td>${fmtMoney(r.pay)}</td>
+        <td>${fmtMoney(r.net)}</td>
+        <td>${fmtRoi(r.roi)}</td>
+        <td>${Number(r.order||0).toLocaleString('zh-CN')}</td>
+        <td>${esc(r.phase)||'—'}</td>
+      </tr>`).join('')}
+      </tbody></table>`
+    : '<div class="empty">该状态当前区间无投放素材</div>';
+}
+function setActiveEvState(state){
+  activeEvState = state;
+  renderEvStateTable();
+  renderEvStateTop();
+}
+document.getElementById('evStateTable').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-state]');
+  if (tr) setActiveEvState(tr.dataset.state);
+});
+document.getElementById('evStateTopSort').addEventListener('change', ()=>{ if (activeEvState) renderEvStateTop(); });
+document.getElementById('evStateTopBody').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-key]');
+  if (!tr) return;
+  switchTab('materials');
+  setTimeout(()=>showMatDetail(tr.dataset.key), 120);
+});
+
+/* ---------- 素材评估板块总入口 ---------- */
+function renderEvTab(){
+  fillEvalFilters();
+  renderEvNewTab();
+  renderEvRank();
+  renderEvStateTable();
+  renderEvStateTop();
+}
+
+/* ============ 修订记录 ============ */
+function renderRevisionTab(){
+  const head = '<tr><th>时间</th><th class="l">素材名称</th><th>周</th><th>字段</th><th>旧值</th><th>新值</th></tr>';
+  document.querySelector('#revTable thead').innerHTML = head;
+  document.querySelector('#revTable tbody').innerHTML = D.revisions.length
+    ? D.revisions.map(r=>`<tr><td>${esc(r.revised_at)}</td><td class="l">${esc(r.name)}</td><td>${esc(r.period_start)}</td><td>${esc(r.field)}</td><td>${esc(r.old_value)}</td><td>${esc(r.new_value)}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="empty">暂无修订记录 —— 官方回调修正历史周数据时，此处会展示覆盖痕迹</td></tr>';
+}
+
+/* ============ 导航 ============ */
+const PAGE_SUB = {
+  overview:  '全量投放表现一览',
+  materials: '主从浏览 · 点选素材查看趋势',
+  new:       '每周上新 · 双口径 · 次周留存',
+  roi:       '素材盈亏结构 · 区间钻取',
+  ai:        'AI素材 · 每周新增 / 排行 / ROI分布',
+  evaluation:'素材状态专项 · 新增评估 / 状态排行 / ROI分布',
+  revision:  '官方回调覆盖痕迹',
+};
+const tabRenderers = { overview:()=>{}, materials:initMaterialsTab, new:renderNewTab, roi:renderRoiTab, ai:renderAiTab, evaluation:renderEvTab, revision:renderRevisionTab };
+const renderedTabs = { overview:true };
+function switchTab(name){
+  document.querySelectorAll('.side-nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id==='tab-'+name));
+  const btn = document.querySelector(`.side-nav button[data-tab="${name}"]`);
+  document.getElementById('pageTitle').textContent = btn ? btn.dataset.title : name;
+  document.getElementById('pageSub').textContent = PAGE_SUB[name] || '';
+  if (!renderedTabs[name]) { renderedTabs[name] = true; tabRenderers[name](); }
+  requestAnimationFrame(()=>Object.values(chartInst).forEach(c=>c&&c.resize()));
+}
+function initMaterialsTab(){
+  if (phaseSelPopulated) { computeMats(); return; }
+  phaseSelPopulated = true;
+  [...new Set(D.materials.map(m=>m.phase))].forEach(p=>{
+    const o=document.createElement('option'); o.value=p; o.textContent=p; phaseSel.appendChild(o);
+  });
+  [...new Set(D.materials.map(lineOf))].sort().forEach(l=>{
+    const o=document.createElement('option'); o.value=l; o.textContent=l; lineSel.appendChild(o);
+  });
+  [...new Set(D.materials.map(m=>m.channel).filter(Boolean))].sort().forEach(c=>{
+    const o=document.createElement('option'); o.value=c; o.textContent=c; chanSel.appendChild(o);
+  });
+  computeMats();
+}
+let phaseSelPopulated = false;
+const phaseSel = document.getElementById('phaseFilter');
+const lineSel = document.getElementById('lineFilter');
+const chanSel = document.getElementById('channelFilter');
+document.querySelectorAll('.side-nav button').forEach(b=>{
+  b.onclick = ()=>switchTab(b.dataset.tab);
+});
+
+/* ============ 账户（数据源）切换 ============ */
+function currentAccountId(){
+  return (new URLSearchParams(location.search)).get('account') || EMBEDDED_ACCOUNT;
+}
+function populateAccountSel(){
+  const sel = document.getElementById('accountSel');
+  if (!sel) return;
+  sel.innerHTML = '';
+  const usable = ACCOUNTS.filter(a=>a.has_data);
+  if (!usable.length){
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = '暂无可用数据';
+    sel.appendChild(o);
+    return;
+  }
+  usable.forEach(a=>{
+    const o = document.createElement('option');
+    o.value = a.id;
+    o.textContent = a.id;
+    sel.appendChild(o);
+  });
+}
+function updateAccountUI(){
+  const id = currentAccountId();
+  const acct = ACCOUNTS.find(a=>a.id===id);
+  const label = acct ? acct.id : id;
+  document.getElementById('sideBrandSub').textContent = label.replace(/-/g,' · ');
+  const bm = document.getElementById('brandMark');
+  if (bm) bm.textContent = label.charAt(0) || '西';
+  const sel = document.getElementById('accountSel');
+  if (sel) sel.value = id;
+  document.title = '千川素材监控看板 · ' + label;
+}
+/* 切换账户：整页刷新（通过 ?account= 参数加载对应数据文件后重新初始化） */
+document.getElementById('accountSel').addEventListener('change', function(){
+  const id = this.value;
+  if (id === currentAccountId()) return;
+  const p = new URLSearchParams(location.search);
+  p.set('account', id);
+  const active = document.querySelector('.side-nav button.active');
+  if (active && active.dataset.tab) p.set('t', active.dataset.tab);
+  location.href = '?' + p.toString();
+});
+
+/* 启动：按当前账户初始化数据依赖常量并渲染 */
+function startApp(){
+  DAY_MIN = D.day_min || (D.weeks[0] || '');
+  DAY_MAX = D.day_max || (D.week_ends && D.week_ends[D.week_ends.length-1]) || '';
+  RANGE = { start: DAY_MIN, end: DAY_MAX };
+  populateAccountSel();
+  updateAccountUI();
+
+  /* URL 直达：?t=overview|materials|new|roi|revision（书签友好）
+     ?materials=<素材key> 直达素材详情；?roi=<区间key> 直达 ROI 钻取抽屉 */
+  const p = new URLSearchParams(location.search);
+  const auto = p.get('t');
+  if (auto && ['overview','materials','new','roi','ai','evaluation','revision'].indexOf(auto) !== -1) switchTab(auto);
+  const mk = p.get('materials');
+  if (mk) setTimeout(()=>showMatDetail(mk), 80);
+  const rk = p.get('roi');
+  if (rk) setTimeout(()=>openRoiDrawer(rk), 80);
+
+  /* 初始化时间圈选：默认全量区间（随后可任意圈选起止日期） */
+  applyRange(DAY_MIN, DAY_MAX);
+}
+
+(function(){
+  const want = currentAccountId();
+  const acct = ACCOUNTS.find(a=>a.id===want);
+  if (acct && !acct.has_data){
+    /* 无数据账户不提供选择：回退默认账户并清除 URL 参数 */
+    const p = new URLSearchParams(location.search);
+    p.delete('account');
+    location.replace('?' + p.toString());
+    return;
+  }
+  if (want === EMBEDDED_ACCOUNT || !acct || !acct.file){
+    startApp();
+    return;
+  }
+  /* 当前账户与内嵌默认账户不同：动态加载其数据文件后初始化 */
+  const s = document.createElement('script');
+  s.src = acct.file;
+  s.onload = ()=>{ D = window.DASH_DATA; startApp(); };
+  s.onerror = ()=>{
+    document.body.insertAdjacentHTML('afterbegin',
+      '<div class="notice" style="margin:12px 12px 0">账户 <b>' + esc(want) + '</b> 的数据加载失败：请刷新重试。</div>');
+    startApp();
+  };
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>

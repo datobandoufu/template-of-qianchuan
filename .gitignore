@@ -1,0 +1,19 @@
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# 数据库备份（保留主库 materials.db，旧版备份不传）
+*.db.bak-*
+
+# 多账户数据库（data/<账户>.db）
+data/
+
+# 桌面应用构建产物与运行日志
+dist/
+build/
+/千川素材监控看板.exe
+看板服务.log
